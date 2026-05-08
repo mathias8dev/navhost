@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 
 import 'bottom_sheet_config.dart';
+import 'dialog_config.dart';
 import 'nav_route.dart';
 export 'bottom_sheet_config.dart' show BottomSheetConfig;
+export 'dialog_config.dart' show DialogConfig;
 export 'nav_route.dart' show NavTransitionBuilder;
 
 // --- Presentation mode (decided at navigate call site) ---
 
-enum RoutePresentation { push, bottomSheet }
+enum RoutePresentation { push, bottomSheet, dialog }
 
 class _RouteEntry {
   final String path;
   final RoutePresentation presentation;
   final BottomSheetConfig? bottomSheetConfig;
+  final DialogConfig? dialogConfig;
   final Widget? inlineChild;
 
   const _RouteEntry(
     this.path, {
     this.presentation = RoutePresentation.push,
     this.bottomSheetConfig,
+    this.dialogConfig,
     this.inlineChild,
   });
 }
@@ -74,6 +78,25 @@ class NavController extends ChangeNotifier {
       '__sheet_${_syntheticId++}',
       presentation: RoutePresentation.bottomSheet,
       bottomSheetConfig: config,
+      inlineChild: child,
+    ));
+    notifyListeners();
+  }
+
+  void showDialog(String path, {DialogConfig config = const DialogConfig()}) {
+    _stack.add(_RouteEntry(
+      path,
+      presentation: RoutePresentation.dialog,
+      dialogConfig: config,
+    ));
+    notifyListeners();
+  }
+
+  void showDialogWidget(Widget child, {DialogConfig config = const DialogConfig()}) {
+    _stack.add(_RouteEntry(
+      '__dialog_${_syntheticId++}',
+      presentation: RoutePresentation.dialog,
+      dialogConfig: config,
       inlineChild: child,
     ));
     notifyListeners();
@@ -147,6 +170,40 @@ class NavController extends ChangeNotifier {
         heightFactor: config.heightFactor,
         child: child,
       ),
+    );
+  }
+
+  Future<T?> pushDialog<T>(
+    String path, {
+    DialogConfig config = const DialogConfig(),
+  }) {
+    final match = _matchPath(path);
+    assert(match != null, 'No route found for: $path');
+    final (route, params) = match!;
+    return _showDialog<T>(child: route.builder(params), config: config);
+  }
+
+  Future<T?> pushDialogWidget<T>(
+    Widget child, {
+    DialogConfig config = const DialogConfig(),
+  }) {
+    return _showDialog<T>(child: child, config: config);
+  }
+
+  Future<T?> _showDialog<T>({
+    required Widget child,
+    required DialogConfig config,
+  }) {
+    final context = navigatorKey.currentContext!;
+    return showAdaptiveDialog<T>(
+      context: context,
+      barrierDismissible: config.barrierDismissible,
+      barrierColor: config.barrierColor,
+      barrierLabel: config.barrierLabel,
+      anchorPoint: config.anchorPoint,
+      requestFocus: config.requestFocus,
+      traversalEdgeBehavior: config.traversalEdgeBehavior,
+      builder: (_) => child,
     );
   }
 
@@ -245,24 +302,18 @@ class _NavRouterDelegate extends RouterDelegate<String>
       final entry = controller._stack[i];
       final key = ValueKey('$i-${entry.path}');
 
+      Widget? child;
+      NavRoute? route;
+
       if (entry.inlineChild != null) {
-        if (entry.presentation == RoutePresentation.bottomSheet) {
-          pages.add(_BottomSheetPage(
-            key: key,
-            child: entry.inlineChild!,
-            config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
-          ));
-        } else {
-          pages.add(MaterialPage(key: key, child: entry.inlineChild!));
-        }
-        continue;
+        child = entry.inlineChild!;
+      } else {
+        final match = controller._matchPath(entry.path);
+        if (match == null) continue;
+        final (matchedRoute, params) = match;
+        route = matchedRoute;
+        child = matchedRoute.builder(params);
       }
-
-      final match = controller._matchPath(entry.path);
-      if (match == null) continue;
-
-      final (route, params) = match;
-      final child = route.builder(params);
 
       switch (entry.presentation) {
         case RoutePresentation.bottomSheet:
@@ -271,12 +322,18 @@ class _NavRouterDelegate extends RouterDelegate<String>
             child: child,
             config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
           ));
+        case RoutePresentation.dialog:
+          pages.add(_DialogPage(
+            key: key,
+            child: child,
+            config: entry.dialogConfig ?? const DialogConfig(),
+          ));
         case RoutePresentation.push:
-          if (route.transition != null) {
+          if (route?.transition != null) {
             pages.add(_TransitionPage(
               key: key,
               child: child,
-              transition: route.transition!,
+              transition: route!.transition!,
               duration: route.transitionDuration,
             ));
           } else {
@@ -292,6 +349,34 @@ class _NavRouterDelegate extends RouterDelegate<String>
         pages: pages,
         onDidRemovePage: (_) => controller.pop(),
       ),
+    );
+  }
+}
+
+// --- Custom Page as dialog ---
+
+class _DialogPage extends Page {
+  final Widget child;
+  final DialogConfig config;
+
+  const _DialogPage({
+    super.key,
+    required this.child,
+    required this.config,
+  });
+
+  @override
+  Route createRoute(BuildContext context) {
+    return DialogRoute(
+      context: context,
+      settings: this,
+      barrierDismissible: config.barrierDismissible,
+      barrierColor: config.barrierColor,
+      barrierLabel: config.barrierLabel,
+      anchorPoint: config.anchorPoint,
+      requestFocus: config.requestFocus,
+      traversalEdgeBehavior: config.traversalEdgeBehavior,
+      builder: (_) => child,
     );
   }
 }
