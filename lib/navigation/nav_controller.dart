@@ -2,113 +2,31 @@ import 'package:flutter/material.dart';
 
 import 'bottom_sheet_config.dart';
 import 'dialog_config.dart';
+import 'nav_back_stack_entry.dart';
+import 'nav_interceptor.dart';
 import 'nav_route.dart';
 export 'bottom_sheet_config.dart' show BottomSheetConfig;
 export 'dialog_config.dart' show DialogConfig;
+export 'nav_back_stack_entry.dart' show NavBackStackEntry;
+export 'nav_interceptor.dart' show NavInterceptor;
 export 'nav_route.dart' show NavTransitionBuilder;
 
+part 'nav_page_builder.dart';
 part 'nav_pages.dart';
 part 'nav_router_delegate.dart';
 part 'nav_host.dart';
 
-enum RoutePresentation { push, bottomSheet, dialog }
-
-class _RouteEntry {
-  final String path;
-  final RoutePresentation presentation;
-  final BottomSheetConfig? bottomSheetConfig;
-  final DialogConfig? dialogConfig;
-  final Widget? inlineChild;
-
-  const _RouteEntry(
-    this.path, {
-    this.presentation = RoutePresentation.push,
-    this.bottomSheetConfig,
-    this.dialogConfig,
-    this.inlineChild,
-  });
-}
-
-List<Page> _buildPages(
-  NavController controller, {
-  NavTransitionBuilder? defaultEnterTransition,
-  NavTransitionBuilder? defaultExitTransition,
-  NavTransitionBuilder? defaultPopEnterTransition,
-  NavTransitionBuilder? defaultPopExitTransition,
-  Duration defaultTransitionDuration = const Duration(milliseconds: 300),
-  Duration? defaultReverseTransitionDuration,
-}) {
-  final pages = <Page>[];
-
-  for (var i = 0; i < controller._stack.length; i++) {
-    final entry = controller._stack[i];
-    final key = ValueKey('$i-${entry.path}');
-
-    Widget? child;
-    NavRoute? route;
-
-    if (entry.inlineChild != null) {
-      child = entry.inlineChild!;
-    } else {
-      final match = controller._matchPath(entry.path);
-      if (match == null) continue;
-      final (matchedRoute, params) = match;
-      route = matchedRoute;
-      child = matchedRoute.builder(params);
-    }
-
-    switch (entry.presentation) {
-      case RoutePresentation.bottomSheet:
-        pages.add(_BottomSheetPage(
-          key: key,
-          child: child,
-          config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
-        ));
-      case RoutePresentation.dialog:
-        pages.add(_DialogPage(
-          key: key,
-          child: child,
-          config: entry.dialogConfig ?? const DialogConfig(),
-        ));
-      case RoutePresentation.push:
-        final enter =
-            route?.enterTransition ?? defaultEnterTransition;
-        if (enter != null) {
-          final duration =
-              route?.transitionDuration ?? defaultTransitionDuration;
-          pages.add(_TransitionPage(
-            key: key,
-            child: child,
-            enterTransition: enter,
-            exitTransition:
-                route?.exitTransition ?? defaultExitTransition,
-            popEnterTransition:
-                route?.popEnterTransition ?? defaultPopEnterTransition,
-            popExitTransition:
-                route?.popExitTransition ?? defaultPopExitTransition,
-            duration: duration,
-            reverseDuration: route?.reverseTransitionDuration ??
-                defaultReverseTransitionDuration ??
-                duration,
-          ));
-        } else {
-          pages.add(MaterialPage(key: key, child: child));
-        }
-    }
-  }
-
-  return pages;
-}
-
 class NavController extends ChangeNotifier {
   final List<NavRoute> routes;
   final String initialRoute;
+  final List<NavInterceptor> interceptors;
   final List<_RouteEntry> _stack;
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   NavController({
     required this.routes,
     this.initialRoute = '/',
+    this.interceptors = const [],
   }) : _stack = [_RouteEntry(initialRoute)];
 
   late final delegate = _NavRouterDelegate(this);
@@ -119,6 +37,19 @@ class NavController extends ChangeNotifier {
   String get currentPath => _stack.last.path;
   bool get canPop => _stack.length > 1;
 
+  NavBackStackEntry get currentEntry => _toEntry(_stack.last);
+
+  NavBackStackEntry? get previousEntry =>
+      _stack.length > 1 ? _toEntry(_stack[_stack.length - 2]) : null;
+
+  List<NavBackStackEntry> get backStack =>
+      List.unmodifiable(_stack.map(_toEntry));
+
+  NavBackStackEntry _toEntry(_RouteEntry entry) {
+    final match = _matchPath(entry.path);
+    return NavBackStackEntry(path: entry.path, params: match?.$2 ?? const {});
+  }
+
   void navigate(
     String path, {
     bool replace = false,
@@ -126,12 +57,15 @@ class NavController extends ChangeNotifier {
     String? popUpTo,
     bool popUpToInclusive = false,
   }) {
-    if (launchSingleTop && currentPath == path) return;
+    final resolved = _applyInterceptors(path);
+    if (resolved == null) return;
+
+    if (launchSingleTop && currentPath == resolved) return;
 
     if (replace) {
       _stack
         ..clear()
-        ..add(_RouteEntry(path));
+        ..add(_RouteEntry(resolved));
     } else {
       if (popUpTo != null) {
         while (_stack.length > 1 && _stack.last.path != popUpTo) {
@@ -143,9 +77,19 @@ class NavController extends ChangeNotifier {
           _stack.removeLast();
         }
       }
-      _stack.add(_RouteEntry(path));
+      _stack.add(_RouteEntry(resolved));
     }
     notifyListeners();
+  }
+
+  String? _applyInterceptors(String to) {
+    var target = to;
+    for (final interceptor in interceptors) {
+      final result = interceptor.intercept(currentPath, target);
+      if (result == currentPath) return null;
+      if (result != null) target = result;
+    }
+    return target;
   }
 
   int _syntheticId = 0;
