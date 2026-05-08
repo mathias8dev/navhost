@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../navigation/nav_controller.dart';
-import '../navigation/context_extensions.dart';
+import 'package:navhost/navhost.dart';
 
 class ShowcasePage extends StatelessWidget {
   const ShowcasePage({super.key});

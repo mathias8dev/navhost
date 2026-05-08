@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:navhost/navhost.dart';
 
-import 'navigation/nav_controller.dart';
-import 'navigation/nav_route.dart';
 import 'pages/details_page.dart';
 import 'pages/main_page.dart';
 

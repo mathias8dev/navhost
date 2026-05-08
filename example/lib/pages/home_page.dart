@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../navigation/context_extensions.dart';
+import 'package:navhost/navhost.dart';
 
 final List<String> items = List.generate(10, (i) => 'Item ${i + 1}');
 
