@@ -1,6 +1,16 @@
 part of 'nav_controller.dart';
 
-enum RoutePresentation { push, bottomSheet, dialog }
+/// How a route entry is presented in the navigation stack.
+enum RoutePresentation {
+  /// Standard full-screen page push.
+  push,
+
+  /// Presented as a modal bottom sheet.
+  bottomSheet,
+
+  /// Presented as a dialog overlay.
+  dialog,
+}
 
 class _RouteEntry {
   final String path;

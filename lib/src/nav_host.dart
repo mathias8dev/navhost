@@ -1,14 +1,40 @@
 part of 'nav_controller.dart';
 
+/// A widget that renders the current navigation stack managed by a [NavController].
+///
+/// Place this in your widget tree wherever you want route content to appear.
+/// It listens to [navController] and rebuilds when the back stack changes.
+///
+/// ```dart
+/// NavHost(
+///   navController: controller,
+///   defaultEnterTransition: (child, animation) =>
+///       FadeTransition(opacity: animation, child: child),
+/// );
+/// ```
 class NavHost extends StatefulWidget {
+  /// The controller that manages the navigation back stack.
   final NavController navController;
+
+  /// Default enter transition used when a route does not specify its own.
   final NavTransitionBuilder? defaultEnterTransition;
+
+  /// Default exit transition used when a route does not specify its own.
   final NavTransitionBuilder? defaultExitTransition;
+
+  /// Default pop-enter transition used when a route does not specify its own.
   final NavTransitionBuilder? defaultPopEnterTransition;
+
+  /// Default pop-exit transition used when a route does not specify its own.
   final NavTransitionBuilder? defaultPopExitTransition;
+
+  /// Duration of the default forward navigation transition.
   final Duration defaultTransitionDuration;
+
+  /// Duration of the default reverse (pop) transition.
   final Duration? defaultReverseTransitionDuration;
 
+  /// Creates a [NavHost] that displays pages from [navController].
   const NavHost({
     super.key,
     required this.navController,

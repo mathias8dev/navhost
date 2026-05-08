@@ -1,3 +1,7 @@
+## 0.1.1
+
+- Add dartdoc comments to all public API elements (library, classes, constructors, fields, methods, typedefs, enums, and extensions).
+
 ## 0.1.0
 
 - Initial release.
