@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'navigation/nav_controller.dart';
 import 'navigation/nav_route.dart';
 import 'pages/details_page.dart';
-import 'pages/home_page.dart';
+import 'pages/main_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +19,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _navController = NavController(
     routes: [
-      NavRoute('/', (_) => const HomePage()),
+      NavRoute('/', (_) => const MainPage()),
       NavRoute('/item/:id', (params) => DetailsPage(itemId: params['id']!)),
     ],
   );

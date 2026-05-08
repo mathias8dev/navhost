@@ -48,9 +48,14 @@ class NavController extends ChangeNotifier {
   String get currentPath => _stack.last.path;
   bool get canPop => _stack.length > 1;
 
-  void navigate(String path,
-      {RoutePresentation presentation = RoutePresentation.push}) {
-    _stack.add(_RouteEntry(path, presentation: presentation));
+  void navigate(String path, {bool replace = false}) {
+    if (replace) {
+      _stack
+        ..clear()
+        ..add(_RouteEntry(path));
+    } else {
+      _stack.add(_RouteEntry(path));
+    }
     notifyListeners();
   }
 
@@ -101,6 +106,8 @@ class NavController extends ChangeNotifier {
     ));
     notifyListeners();
   }
+
+  void switchTo(String path) => navigate(path, replace: true);
 
   void pop() {
     if (canPop) {
@@ -464,5 +471,66 @@ class _NavRouteInformationParser extends RouteInformationParser<String> {
   @override
   RouteInformation? restoreRouteInformation(String configuration) {
     return RouteInformation(uri: Uri.parse(configuration));
+  }
+}
+
+// --- NavHost widget (like Compose's NavHost) ---
+
+class NavHost extends StatefulWidget {
+  final NavController navController;
+  final Duration transitionDuration;
+  final AnimatedSwitcherTransitionBuilder transitionBuilder;
+
+  const NavHost({
+    super.key,
+    required this.navController,
+    this.transitionDuration = const Duration(milliseconds: 300),
+    this.transitionBuilder = AnimatedSwitcher.defaultTransitionBuilder,
+  });
+
+  @override
+  State<NavHost> createState() => _NavHostState();
+}
+
+class _NavHostState extends State<NavHost> {
+  @override
+  void initState() {
+    super.initState();
+    widget.navController.addListener(_onChanged);
+  }
+
+  @override
+  void didUpdateWidget(NavHost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.navController != widget.navController) {
+      oldWidget.navController.removeListener(_onChanged);
+      widget.navController.addListener(_onChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.navController.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final match =
+        widget.navController._matchPath(widget.navController.currentPath);
+    if (match == null) return const SizedBox.shrink();
+    final (route, params) = match;
+    final hasRouteTransition = route.transition != null;
+
+    return AnimatedSwitcher(
+      duration: hasRouteTransition ? route.transitionDuration : widget.transitionDuration,
+      transitionBuilder: route.transition ?? widget.transitionBuilder,
+      child: KeyedSubtree(
+        key: ValueKey(widget.navController.currentPath),
+        child: route.builder(params),
+      ),
+    );
   }
 }
