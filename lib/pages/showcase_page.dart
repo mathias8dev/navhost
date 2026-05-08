@@ -21,6 +21,8 @@ class ShowcasePage extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           sliver: SliverList.list(
             children: [
+              _BackStackCard(nav: nav),
+              const SizedBox(height: 16),
               _SectionTitle('Declarative (stack-managed)'),
               _ActionTile(
                 icon: Icons.arrow_forward,
@@ -125,6 +127,59 @@ class ShowcasePage extends StatelessWidget {
                   }
                 },
               ),
+              const SizedBox(height: 24),
+              _SectionTitle('Navigation options'),
+              _ActionTile(
+                icon: Icons.filter_1,
+                title: 'launchSingleTop: true',
+                subtitle: 'Tap twice — second is a no-op',
+                onTap: () => nav.navigate('/item/1',
+                    launchSingleTop: true),
+              ),
+              _ActionTile(
+                icon: Icons.low_priority,
+                title: 'popUpTo "/"',
+                subtitle: 'Build stack, then popUpTo root + push',
+                onTap: () {
+                  nav.navigate('/item/1');
+                  nav.navigate('/item/2');
+                  nav.navigate('/item/3',
+                      popUpTo: '/', popUpToInclusive: false);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.delete_sweep,
+                title: 'popUpTo "/" inclusive',
+                subtitle: 'Clears entire stack before pushing',
+                onTap: () {
+                  nav.navigate('/item/1');
+                  nav.navigate('/item/2');
+                  nav.navigate('/item/3',
+                      popUpTo: '/', popUpToInclusive: true);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.undo,
+                title: 'popUntil "/" inclusive',
+                subtitle: 'Build stack, then pop everything',
+                onTap: () {
+                  nav.navigate('/item/1');
+                  nav.navigate('/item/2');
+                  nav.popUntil('/', inclusive: false);
+                },
+              ),
+              const SizedBox(height: 24),
+              _SectionTitle('Transitions'),
+              _ActionTile(
+                icon: Icons.slideshow,
+                title: 'Slide in / Slide out',
+                onTap: () => nav.navigateWidget(
+                  _TransitionDemoPage(
+                    title: 'Slide Transition',
+                    onBack: () => nav.pop(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -199,6 +254,77 @@ class ShowcasePage extends StatelessWidget {
   }
 }
 
+// --- Back stack info card ---
+
+class _BackStackCard extends StatefulWidget {
+  final NavController nav;
+  const _BackStackCard({required this.nav});
+
+  @override
+  State<_BackStackCard> createState() => _BackStackCardState();
+}
+
+class _BackStackCardState extends State<_BackStackCard> {
+  @override
+  void initState() {
+    super.initState();
+    widget.nav.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.nav.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final stack = widget.nav.backStack;
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      color: colors.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Back Stack (${stack.length})',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: colors.primary)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (var i = 0; i < stack.length; i++)
+                  Chip(
+                    label: Text(
+                      stack[i].path,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: i == stack.length - 1
+                        ? colors.primaryContainer
+                        : null,
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+            if (widget.nav.currentEntry.params.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Params: ${widget.nav.currentEntry.params}',
+                style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // --- Helper widgets ---
 
 class _SectionTitle extends StatelessWidget {
@@ -222,12 +348,14 @@ class _SectionTitle extends StatelessWidget {
 class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final VoidCallback onTap;
 
   const _ActionTile({
     required this.icon,
     required this.title,
     required this.onTap,
+    this.subtitle,
   });
 
   @override
@@ -236,6 +364,9 @@ class _ActionTile extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon),
         title: Text(title, style: const TextStyle(fontSize: 14)),
+        subtitle: subtitle != null
+            ? Text(subtitle!, style: const TextStyle(fontSize: 12))
+            : null,
         trailing: const Icon(Icons.play_arrow, size: 20),
         onTap: onTap,
       ),
@@ -294,6 +425,29 @@ class _ResultPage extends StatelessWidget {
             onTap: () => Navigator.pop(context, value),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _TransitionDemoPage extends StatelessWidget {
+  final String title;
+  final VoidCallback onBack;
+  const _TransitionDemoPage({required this.title, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBack,
+        ),
+      ),
+      body: Center(
+        child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
       ),
     );
   }
