@@ -52,6 +52,14 @@ class NavController extends ChangeNotifier {
 
   int _syntheticId = 0;
 
+  void navigateWidget(Widget child) {
+    _stack.add(_RouteEntry(
+      '__page_${_syntheticId++}',
+      inlineChild: child,
+    ));
+    notifyListeners();
+  }
+
   void showBottomSheet(String path, {BottomSheetConfig config = const BottomSheetConfig()}) {
     _stack.add(_RouteEntry(
       path,
@@ -76,6 +84,70 @@ class NavController extends ChangeNotifier {
       _stack.removeLast();
       notifyListeners();
     }
+  }
+
+  // --- Imperative methods (bypass stack, return results) ---
+
+  Future<T?> push<T>(String path) {
+    final match = _matchPath(path);
+    assert(match != null, 'No route found for: $path');
+    final (route, params) = match!;
+    return navigator!.push<T>(MaterialPageRoute(
+      builder: (_) => route.builder(params),
+    ));
+  }
+
+  Future<T?> pushWidget<T>(Widget child) {
+    return navigator!.push<T>(MaterialPageRoute(
+      builder: (_) => child,
+    ));
+  }
+
+  Future<T?> pushBottomSheet<T>(
+    String path, {
+    BottomSheetConfig config = const BottomSheetConfig(),
+  }) {
+    final match = _matchPath(path);
+    assert(match != null, 'No route found for: $path');
+    final (route, params) = match!;
+    return _showModalBottomSheet<T>(
+      child: route.builder(params),
+      config: config,
+    );
+  }
+
+  Future<T?> pushBottomSheetWidget<T>(
+    Widget child, {
+    BottomSheetConfig config = const BottomSheetConfig(),
+  }) {
+    return _showModalBottomSheet<T>(child: child, config: config);
+  }
+
+  Future<T?> _showModalBottomSheet<T>({
+    required Widget child,
+    required BottomSheetConfig config,
+  }) {
+    final context = navigatorKey.currentContext!;
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: config.backgroundColor,
+      elevation: config.elevation,
+      shape: config.shape,
+      clipBehavior: config.clipBehavior,
+      constraints: config.constraints,
+      barrierColor: config.modalBarrierColor,
+      isDismissible: config.isDismissible,
+      enableDrag: config.enableDrag,
+      showDragHandle: config.showDragHandle,
+      anchorPoint: config.anchorPoint,
+      useSafeArea: config.useSafeArea,
+      sheetAnimationStyle: config.sheetAnimationStyle,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: config.heightFactor,
+        child: child,
+      ),
+    );
   }
 
   void popUntil(String path) {
@@ -174,11 +246,15 @@ class _NavRouterDelegate extends RouterDelegate<String>
       final key = ValueKey('$i-${entry.path}');
 
       if (entry.inlineChild != null) {
-        pages.add(_BottomSheetPage(
-          key: key,
-          child: entry.inlineChild!,
-          config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
-        ));
+        if (entry.presentation == RoutePresentation.bottomSheet) {
+          pages.add(_BottomSheetPage(
+            key: key,
+            child: entry.inlineChild!,
+            config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+          ));
+        } else {
+          pages.add(MaterialPage(key: key, child: entry.inlineChild!));
+        }
         continue;
       }
 
