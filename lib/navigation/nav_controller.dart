@@ -119,12 +119,30 @@ class NavController extends ChangeNotifier {
   String get currentPath => _stack.last.path;
   bool get canPop => _stack.length > 1;
 
-  void navigate(String path, {bool replace = false}) {
+  void navigate(
+    String path, {
+    bool replace = false,
+    bool launchSingleTop = false,
+    String? popUpTo,
+    bool popUpToInclusive = false,
+  }) {
+    if (launchSingleTop && currentPath == path) return;
+
     if (replace) {
       _stack
         ..clear()
         ..add(_RouteEntry(path));
     } else {
+      if (popUpTo != null) {
+        while (_stack.length > 1 && _stack.last.path != popUpTo) {
+          _stack.removeLast();
+        }
+        if (popUpToInclusive &&
+            _stack.isNotEmpty &&
+            _stack.last.path == popUpTo) {
+          _stack.removeLast();
+        }
+      }
       _stack.add(_RouteEntry(path));
     }
     notifyListeners();
@@ -288,15 +306,22 @@ class NavController extends ChangeNotifier {
     );
   }
 
-  void popUntil(String path) {
+  void popUntil(String path, {bool inclusive = false}) {
     while (canPop && _stack.last.path != path) {
+      _stack.removeLast();
+    }
+    if (inclusive && canPop && _stack.last.path == path) {
       _stack.removeLast();
     }
     notifyListeners();
   }
 
-  void popUntilWhere(bool Function(String path) predicate) {
+  void popUntilWhere(bool Function(String path) predicate,
+      {bool inclusive = false}) {
     while (canPop && !predicate(_stack.last.path)) {
+      _stack.removeLast();
+    }
+    if (inclusive && canPop && predicate(_stack.last.path)) {
       _stack.removeLast();
     }
     notifyListeners();
