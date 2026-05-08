@@ -7,7 +7,9 @@ export 'bottom_sheet_config.dart' show BottomSheetConfig;
 export 'dialog_config.dart' show DialogConfig;
 export 'nav_route.dart' show NavTransitionBuilder;
 
-// --- Presentation mode (decided at navigate call site) ---
+part 'nav_pages.dart';
+part 'nav_router_delegate.dart';
+part 'nav_host.dart';
 
 enum RoutePresentation { push, bottomSheet, dialog }
 
@@ -27,12 +29,82 @@ class _RouteEntry {
   });
 }
 
-// --- NavController ---
+List<Page> _buildPages(
+  NavController controller, {
+  NavTransitionBuilder? defaultEnterTransition,
+  NavTransitionBuilder? defaultExitTransition,
+  NavTransitionBuilder? defaultPopEnterTransition,
+  NavTransitionBuilder? defaultPopExitTransition,
+  Duration defaultTransitionDuration = const Duration(milliseconds: 300),
+  Duration? defaultReverseTransitionDuration,
+}) {
+  final pages = <Page>[];
+
+  for (var i = 0; i < controller._stack.length; i++) {
+    final entry = controller._stack[i];
+    final key = ValueKey('$i-${entry.path}');
+
+    Widget? child;
+    NavRoute? route;
+
+    if (entry.inlineChild != null) {
+      child = entry.inlineChild!;
+    } else {
+      final match = controller._matchPath(entry.path);
+      if (match == null) continue;
+      final (matchedRoute, params) = match;
+      route = matchedRoute;
+      child = matchedRoute.builder(params);
+    }
+
+    switch (entry.presentation) {
+      case RoutePresentation.bottomSheet:
+        pages.add(_BottomSheetPage(
+          key: key,
+          child: child,
+          config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+        ));
+      case RoutePresentation.dialog:
+        pages.add(_DialogPage(
+          key: key,
+          child: child,
+          config: entry.dialogConfig ?? const DialogConfig(),
+        ));
+      case RoutePresentation.push:
+        final enter =
+            route?.enterTransition ?? defaultEnterTransition;
+        if (enter != null) {
+          final duration =
+              route?.transitionDuration ?? defaultTransitionDuration;
+          pages.add(_TransitionPage(
+            key: key,
+            child: child,
+            enterTransition: enter,
+            exitTransition:
+                route?.exitTransition ?? defaultExitTransition,
+            popEnterTransition:
+                route?.popEnterTransition ?? defaultPopEnterTransition,
+            popExitTransition:
+                route?.popExitTransition ?? defaultPopExitTransition,
+            duration: duration,
+            reverseDuration: route?.reverseTransitionDuration ??
+                defaultReverseTransitionDuration ??
+                duration,
+          ));
+        } else {
+          pages.add(MaterialPage(key: key, child: child));
+        }
+    }
+  }
+
+  return pages;
+}
 
 class NavController extends ChangeNotifier {
   final List<NavRoute> routes;
   final String initialRoute;
   final List<_RouteEntry> _stack;
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   NavController({
     required this.routes,
@@ -42,7 +114,6 @@ class NavController extends ChangeNotifier {
   late final delegate = _NavRouterDelegate(this);
   late final parser = _NavRouteInformationParser();
 
-  GlobalKey<NavigatorState> get navigatorKey => delegate.navigatorKey;
   NavigatorState? get navigator => navigatorKey.currentState;
 
   String get currentPath => _stack.last.path;
@@ -69,7 +140,8 @@ class NavController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void showBottomSheet(String path, {BottomSheetConfig config = const BottomSheetConfig()}) {
+  void showBottomSheet(String path,
+      {BottomSheetConfig config = const BottomSheetConfig()}) {
     _stack.add(_RouteEntry(
       path,
       presentation: RoutePresentation.bottomSheet,
@@ -78,7 +150,8 @@ class NavController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void showBottomSheetWidget(Widget child, {BottomSheetConfig config = const BottomSheetConfig()}) {
+  void showBottomSheetWidget(Widget child,
+      {BottomSheetConfig config = const BottomSheetConfig()}) {
     _stack.add(_RouteEntry(
       '__sheet_${_syntheticId++}',
       presentation: RoutePresentation.bottomSheet,
@@ -97,7 +170,8 @@ class NavController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void showDialogWidget(Widget child, {DialogConfig config = const DialogConfig()}) {
+  void showDialogWidget(Widget child,
+      {DialogConfig config = const DialogConfig()}) {
     _stack.add(_RouteEntry(
       '__dialog_${_syntheticId++}',
       presentation: RoutePresentation.dialog,
@@ -261,8 +335,6 @@ class NavController extends ChangeNotifier {
   }
 }
 
-// --- InheritedWidget (private, accessed via NavController.of) ---
-
 class _NavControllerScope extends InheritedWidget {
   final NavController controller;
 
@@ -274,263 +346,4 @@ class _NavControllerScope extends InheritedWidget {
   @override
   bool updateShouldNotify(_NavControllerScope oldWidget) =>
       controller != oldWidget.controller;
-}
-
-// --- RouterDelegate (wraps Navigator 2.0) ---
-
-class _NavRouterDelegate extends RouterDelegate<String>
-    with ChangeNotifier, PopNavigatorRouterDelegateMixin<String> {
-  final NavController controller;
-
-  @override
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-  _NavRouterDelegate(this.controller) {
-    controller.addListener(notifyListeners);
-  }
-
-  @override
-  String get currentConfiguration => controller.currentPath;
-
-  @override
-  Future<void> setNewRoutePath(String configuration) async {
-    controller._stack.clear();
-    if (configuration != controller.initialRoute) {
-      controller._stack.add(_RouteEntry(controller.initialRoute));
-    }
-    controller._stack.add(_RouteEntry(configuration));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = <Page>[];
-
-    for (var i = 0; i < controller._stack.length; i++) {
-      final entry = controller._stack[i];
-      final key = ValueKey('$i-${entry.path}');
-
-      Widget? child;
-      NavRoute? route;
-
-      if (entry.inlineChild != null) {
-        child = entry.inlineChild!;
-      } else {
-        final match = controller._matchPath(entry.path);
-        if (match == null) continue;
-        final (matchedRoute, params) = match;
-        route = matchedRoute;
-        child = matchedRoute.builder(params);
-      }
-
-      switch (entry.presentation) {
-        case RoutePresentation.bottomSheet:
-          pages.add(_BottomSheetPage(
-            key: key,
-            child: child,
-            config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
-          ));
-        case RoutePresentation.dialog:
-          pages.add(_DialogPage(
-            key: key,
-            child: child,
-            config: entry.dialogConfig ?? const DialogConfig(),
-          ));
-        case RoutePresentation.push:
-          if (route?.transition != null) {
-            pages.add(_TransitionPage(
-              key: key,
-              child: child,
-              transition: route!.transition!,
-              duration: route.transitionDuration,
-            ));
-          } else {
-            pages.add(MaterialPage(key: key, child: child));
-          }
-      }
-    }
-
-    return _NavControllerScope(
-      controller: controller,
-      child: Navigator(
-        key: navigatorKey,
-        pages: pages,
-        onDidRemovePage: (_) => controller.pop(),
-      ),
-    );
-  }
-}
-
-// --- Custom Page as dialog ---
-
-class _DialogPage extends Page {
-  final Widget child;
-  final DialogConfig config;
-
-  const _DialogPage({
-    super.key,
-    required this.child,
-    required this.config,
-  });
-
-  @override
-  Route createRoute(BuildContext context) {
-    return DialogRoute(
-      context: context,
-      settings: this,
-      barrierDismissible: config.barrierDismissible,
-      barrierColor: config.barrierColor,
-      barrierLabel: config.barrierLabel,
-      anchorPoint: config.anchorPoint,
-      requestFocus: config.requestFocus,
-      traversalEdgeBehavior: config.traversalEdgeBehavior,
-      builder: (_) => child,
-    );
-  }
-}
-
-// --- Custom Page as bottom sheet ---
-
-class _BottomSheetPage extends Page {
-  final Widget child;
-  final BottomSheetConfig config;
-
-  const _BottomSheetPage({
-    super.key,
-    required this.child,
-    required this.config,
-  });
-
-  @override
-  Route createRoute(BuildContext context) {
-    
-    return ModalBottomSheetRoute(
-      settings: this,
-      isScrollControlled: true,
-      scrollControlDisabledMaxHeightRatio:
-          config.scrollControlDisabledMaxHeightRatio,
-      barrierLabel: config.barrierLabel,
-      barrierOnTapHint: config.barrierOnTapHint,
-      backgroundColor: config.backgroundColor,
-      elevation: config.elevation,
-      shape: config.shape,
-      clipBehavior: config.clipBehavior,
-      constraints: config.constraints,
-      modalBarrierColor: config.modalBarrierColor,
-      isDismissible: config.isDismissible,
-      enableDrag: config.enableDrag,
-      showDragHandle: config.showDragHandle,
-      requestFocus: config.requestFocus,
-      transitionAnimationController: config.transitionAnimationController,
-      anchorPoint: config.anchorPoint,
-      useSafeArea: config.useSafeArea,
-      sheetAnimationStyle: config.sheetAnimationStyle,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: config.heightFactor,
-        child: child,
-      ),
-    );
-  }
-}
-
-// --- Custom Page with transition ---
-
-class _TransitionPage extends Page {
-  final Widget child;
-  final NavTransitionBuilder transition;
-  final Duration duration;
-
-  const _TransitionPage({
-    super.key,
-    required this.child,
-    required this.transition,
-    required this.duration,
-  });
-
-  @override
-  Route createRoute(BuildContext context) {
-    return PageRouteBuilder(
-      settings: this,
-      transitionDuration: duration,
-      reverseTransitionDuration: duration,
-      pageBuilder: (_, _, _) => child,
-      transitionsBuilder: (_, animation, _, child) =>
-          transition(child, animation),
-    );
-  }
-}
-
-// --- RouteInformationParser ---
-
-class _NavRouteInformationParser extends RouteInformationParser<String> {
-  @override
-  Future<String> parseRouteInformation(
-      RouteInformation routeInformation) async {
-    return routeInformation.uri.path;
-  }
-
-  @override
-  RouteInformation? restoreRouteInformation(String configuration) {
-    return RouteInformation(uri: Uri.parse(configuration));
-  }
-}
-
-// --- NavHost widget (like Compose's NavHost) ---
-
-class NavHost extends StatefulWidget {
-  final NavController navController;
-  final Duration transitionDuration;
-  final AnimatedSwitcherTransitionBuilder transitionBuilder;
-
-  const NavHost({
-    super.key,
-    required this.navController,
-    this.transitionDuration = const Duration(milliseconds: 300),
-    this.transitionBuilder = AnimatedSwitcher.defaultTransitionBuilder,
-  });
-
-  @override
-  State<NavHost> createState() => _NavHostState();
-}
-
-class _NavHostState extends State<NavHost> {
-  @override
-  void initState() {
-    super.initState();
-    widget.navController.addListener(_onChanged);
-  }
-
-  @override
-  void didUpdateWidget(NavHost oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.navController != widget.navController) {
-      oldWidget.navController.removeListener(_onChanged);
-      widget.navController.addListener(_onChanged);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.navController.removeListener(_onChanged);
-    super.dispose();
-  }
-
-  void _onChanged() => setState(() {});
-
-  @override
-  Widget build(BuildContext context) {
-    final match =
-        widget.navController._matchPath(widget.navController.currentPath);
-    if (match == null) return const SizedBox.shrink();
-    final (route, params) = match;
-    final hasRouteTransition = route.transition != null;
-
-    return AnimatedSwitcher(
-      duration: hasRouteTransition ? route.transitionDuration : widget.transitionDuration,
-      transitionBuilder: route.transition ?? widget.transitionBuilder,
-      child: KeyedSubtree(
-        key: ValueKey(widget.navController.currentPath),
-        child: route.builder(params),
-      ),
-    );
-  }
 }

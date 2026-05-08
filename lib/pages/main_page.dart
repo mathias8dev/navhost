@@ -29,20 +29,11 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       body: NavHost(
         navController: _tabController,
-        transitionDuration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) => FadeTransition(
+        defaultEnterTransition: (child, animation) => FadeTransition(
           opacity: animation,
-          child: SlideTransition(
-            position: Tween(
-              begin: const Offset(0.05, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            )),
-            child: child,
-          ),
+          child: child,
         ),
+        defaultTransitionDuration: const Duration(milliseconds: 200),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

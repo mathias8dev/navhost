@@ -7,13 +7,23 @@ typedef NavTransitionBuilder = Widget Function(
 class NavRoute {
   final String path;
   final NavWidgetBuilder builder;
-  final NavTransitionBuilder? transition;
-  final Duration transitionDuration;
+  final NavTransitionBuilder? enterTransition;
+  final NavTransitionBuilder? exitTransition;
+  final NavTransitionBuilder? popEnterTransition;
+  final NavTransitionBuilder? popExitTransition;
+  final Duration? transitionDuration;
+  final Duration? reverseTransitionDuration;
 
   const NavRoute(
     this.path,
     this.builder, {
-    this.transition,
-    this.transitionDuration = const Duration(milliseconds: 300),
+    this.enterTransition,
+    this.exitTransition,
+    this.popEnterTransition,
+    this.popExitTransition,
+    this.transitionDuration,
+    this.reverseTransitionDuration,
   });
+
+  bool get hasTransition => enterTransition != null;
 }
