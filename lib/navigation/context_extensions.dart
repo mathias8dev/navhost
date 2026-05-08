@@ -4,4 +4,5 @@ import 'nav_controller.dart';
 
 extension NavContextExtension on BuildContext {
   NavController get navController => NavController.of(this);
+  NavigatorState? get navigator => navController.navigator;
 }

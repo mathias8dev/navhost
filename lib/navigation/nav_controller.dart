@@ -13,11 +13,13 @@ class _RouteEntry {
   final String path;
   final RoutePresentation presentation;
   final BottomSheetConfig? bottomSheetConfig;
+  final Widget? inlineChild;
 
   const _RouteEntry(
     this.path, {
     this.presentation = RoutePresentation.push,
     this.bottomSheetConfig,
+    this.inlineChild,
   });
 }
 
@@ -36,6 +38,9 @@ class NavController extends ChangeNotifier {
   late final delegate = _NavRouterDelegate(this);
   late final parser = _NavRouteInformationParser();
 
+  GlobalKey<NavigatorState> get navigatorKey => delegate.navigatorKey;
+  NavigatorState? get navigator => navigatorKey.currentState;
+
   String get currentPath => _stack.last.path;
   bool get canPop => _stack.length > 1;
 
@@ -45,11 +50,23 @@ class NavController extends ChangeNotifier {
     notifyListeners();
   }
 
+  int _syntheticId = 0;
+
   void showBottomSheet(String path, {BottomSheetConfig config = const BottomSheetConfig()}) {
     _stack.add(_RouteEntry(
       path,
       presentation: RoutePresentation.bottomSheet,
       bottomSheetConfig: config,
+    ));
+    notifyListeners();
+  }
+
+  void showBottomSheetWidget(Widget child, {BottomSheetConfig config = const BottomSheetConfig()}) {
+    _stack.add(_RouteEntry(
+      '__sheet_${_syntheticId++}',
+      presentation: RoutePresentation.bottomSheet,
+      bottomSheetConfig: config,
+      inlineChild: child,
     ));
     notifyListeners();
   }
@@ -154,31 +171,41 @@ class _NavRouterDelegate extends RouterDelegate<String>
 
     for (var i = 0; i < controller._stack.length; i++) {
       final entry = controller._stack[i];
-      final match = controller._matchPath(entry.path);
-      if (match != null) {
-        final (route, params) = match;
-        final child = route.builder(params);
-        final key = ValueKey('$i-${entry.path}');
+      final key = ValueKey('$i-${entry.path}');
 
-        switch (entry.presentation) {
-          case RoutePresentation.bottomSheet:
-            pages.add(_BottomSheetPage(
+      if (entry.inlineChild != null) {
+        pages.add(_BottomSheetPage(
+          key: key,
+          child: entry.inlineChild!,
+          config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+        ));
+        continue;
+      }
+
+      final match = controller._matchPath(entry.path);
+      if (match == null) continue;
+
+      final (route, params) = match;
+      final child = route.builder(params);
+
+      switch (entry.presentation) {
+        case RoutePresentation.bottomSheet:
+          pages.add(_BottomSheetPage(
+            key: key,
+            child: child,
+            config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+          ));
+        case RoutePresentation.push:
+          if (route.transition != null) {
+            pages.add(_TransitionPage(
               key: key,
               child: child,
-              config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+              transition: route.transition!,
+              duration: route.transitionDuration,
             ));
-          case RoutePresentation.push:
-            if (route.transition != null) {
-              pages.add(_TransitionPage(
-                key: key,
-                child: child,
-                transition: route.transition!,
-                duration: route.transitionDuration,
-              ));
-            } else {
-              pages.add(MaterialPage(key: key, child: child));
-            }
-        }
+          } else {
+            pages.add(MaterialPage(key: key, child: child));
+          }
       }
     }
 
