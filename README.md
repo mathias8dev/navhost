@@ -213,6 +213,10 @@ nav.addListener(() {
 });
 ```
 
+## State management
+
+Looking for reactive state management? Check out [navhost_state](https://pub.dev/packages/navhost_state) — GetX-style `.obs` reactive values, auto-tracking `Obs` widgets, and scoped ViewModels that are tied to the route lifecycle. Zero boilerplate, fine-grained rebuilds.
+
 ## Example
 
 See the [example app](example/) for a full showcase of all navigation features.
