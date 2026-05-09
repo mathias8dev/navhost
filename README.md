@@ -213,6 +213,96 @@ nav.addListener(() {
 });
 ```
 
+## Deep links
+
+navhost supports deep links out of the box via `MaterialApp.router`. When the OS opens your app with a URL, the route is matched automatically against your defined routes — including path parameters.
+
+```dart
+// These routes handle deep links with no extra configuration
+final _navController = NavController(
+  routes: [
+    NavRoute('/', (_) => const HomePage()),
+    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+    NavRoute('/user/:uid/post/:pid', (params) => PostPage(
+      userId: params['uid']!,
+      postId: params['pid']!,
+    )),
+  ],
+);
+```
+
+Opening `https://example.com/item/42` or `myapp://item/42` navigates to `DetailPage(id: '42')` with the initial route underneath in the back stack, so the back button takes the user to `/`.
+
+### Android setup
+
+Add intent filters to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<activity ...>
+  <!-- Deep links -->
+  <intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="myapp" />
+  </intent-filter>
+
+  <!-- App links (https) -->
+  <intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="https" android:host="example.com" />
+  </intent-filter>
+</activity>
+```
+
+### iOS setup
+
+Add URL schemes and associated domains in `ios/Runner/Info.plist`:
+
+```xml
+<!-- Custom URL scheme -->
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>myapp</string>
+    </array>
+  </dict>
+</array>
+```
+
+For universal links, add the associated domain in Xcode under **Signing & Capabilities > Associated Domains**:
+
+```
+applinks:example.com
+```
+
+### Testing deep links
+
+```bash
+# Android
+adb shell am start -a android.intent.action.VIEW -d "myapp://item/42"
+
+# iOS
+xcrun simctl openurl booted "myapp://item/42"
+```
+
+### Guarding deep links with interceptors
+
+Interceptors apply to deep links too — unauthenticated users are redirected before the route is shown:
+
+```dart
+NavController(
+  routes: [...],
+  interceptors: [AuthGuard()],
+)
+```
+
+If a user opens `myapp://protected/settings` and `AuthGuard` redirects to `/login`, they never see the protected page.
+
 ## Migrating from other routers
 
 ### From GoRouter
