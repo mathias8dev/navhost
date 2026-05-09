@@ -213,6 +213,172 @@ nav.addListener(() {
 });
 ```
 
+## Migrating from other routers
+
+### From GoRouter
+
+**Route definition:**
+```dart
+// GoRouter
+GoRouter(
+  routes: [
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
+    GoRoute(path: '/item/:id', builder: (context, state) =>
+        DetailPage(id: state.pathParameters['id']!)),
+  ],
+)
+
+// navhost
+NavController(
+  routes: [
+    NavRoute('/', (_) => const HomePage()),
+    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+  ],
+)
+```
+
+**Navigation:**
+```dart
+// GoRouter
+context.go('/item/42');
+context.push('/item/42');
+context.pop();
+
+// navhost
+context.navController.switchTo('/item/42');   // replaces stack (like go)
+context.navController.navigate('/item/42');   // pushes (like push)
+context.navController.pop();
+```
+
+**Redirects:**
+```dart
+// GoRouter
+GoRouter(redirect: (context, state) {
+  if (!isLoggedIn && state.matchedLocation.startsWith('/protected')) {
+    return '/login';
+  }
+  return null;
+})
+
+// navhost
+class AuthGuard extends NavInterceptor {
+  @override
+  String? intercept(String from, String to) {
+    if (!isLoggedIn && to.startsWith('/protected')) return '/login';
+    return null;
+  }
+}
+
+NavController(
+  interceptors: [AuthGuard()],
+)
+```
+
+### From auto_route
+
+**Route definition:**
+```dart
+// auto_route
+@AutoRouterConfig()
+class AppRouter extends RootStackRouter {
+  @override
+  List<AutoRoute> get routes => [
+    AutoRoute(page: HomeRoute.page, initial: true),
+    AutoRoute(page: DetailRoute.page, path: '/item/:id'),
+  ];
+}
+
+// navhost — no code generation needed
+NavController(
+  routes: [
+    NavRoute('/', (_) => const HomePage()),
+    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+  ],
+)
+```
+
+**Navigation:**
+```dart
+// auto_route
+context.router.push(DetailRoute(id: '42'));
+context.router.pop();
+context.router.replaceAll([HomeRoute()]);
+
+// navhost
+context.navController.navigate('/item/42');
+context.navController.pop();
+context.navController.switchTo('/');
+```
+
+### From Navigator 1.0
+
+**Push and pop:**
+```dart
+// Navigator 1.0
+Navigator.of(context).push(MaterialPageRoute(
+  builder: (_) => DetailPage(id: '42'),
+));
+Navigator.of(context).pop();
+
+// navhost
+context.navController.navigate('/item/42');
+context.navController.pop();
+```
+
+**Named routes:**
+```dart
+// Navigator 1.0
+MaterialApp(
+  routes: {
+    '/': (_) => const HomePage(),
+    '/settings': (_) => const SettingsPage(),
+  },
+)
+Navigator.of(context).pushNamed('/settings');
+
+// navhost
+NavController(
+  routes: [
+    NavRoute('/', (_) => const HomePage()),
+    NavRoute('/settings', (_) => const SettingsPage()),
+  ],
+)
+context.navController.navigate('/settings');
+```
+
+### From GetX routing
+
+```dart
+// GetX
+GetMaterialApp(
+  getPages: [
+    GetPage(name: '/', page: () => HomePage()),
+    GetPage(name: '/item/:id', page: () => DetailPage()),
+  ],
+)
+Get.toNamed('/item/42');
+Get.back();
+Get.offAllNamed('/');
+
+// navhost
+NavController(
+  routes: [
+    NavRoute('/', (_) => const HomePage()),
+    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+  ],
+)
+context.navController.navigate('/item/42');
+context.navController.pop();
+context.navController.switchTo('/');
+```
+
+### Migration tips
+
+- **Migrate incrementally** — navhost uses `MaterialApp.router`, so switching the router is a one-time change at the app root
+- **Path parameters work the same** — `/item/:id` syntax is identical across most routers
+- **No code generation** — unlike auto_route, navhost routes are defined inline with no build step
+- **Transitions carry over** — navhost supports per-route and global transitions, same as GoRouter and auto_route
+
 ## State management
 
 Looking for reactive state management? Check out [navhost_state](https://pub.dev/packages/navhost_state) — GetX-style `.obs` reactive values, auto-tracking `Obs` widgets, and scoped ViewModels that are tied to the route lifecycle. Zero boilerplate, fine-grained rebuilds.
