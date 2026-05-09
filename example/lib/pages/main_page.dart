@@ -19,9 +19,9 @@ class _MainPageState extends State<MainPage> {
   final _tabController = NavController(
     initialRoute: '/home',
     routes: [
-      NavRoute('/home', (_) => const HomePage()),
-      NavRoute('/showcase', (_) => const ShowcasePage()),
-      NavRoute('/item/:id', (p) => DetailsPage(itemId: p['id']!)),
+      NavRoute('/home', (_, _) => const HomePage()),
+      NavRoute('/showcase', (_, _) => const ShowcasePage()),
+      NavRoute('/item/:id', (p, _) => DetailsPage(itemId: p['id']!)),
     ],
   );
 

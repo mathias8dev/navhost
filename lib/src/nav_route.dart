@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-/// Builds a widget for a route, receiving the extracted path [params].
-typedef NavWidgetBuilder = Widget Function(Map<String, String> params);
+/// Builds a widget for a route, receiving the extracted path [params]
+/// and URL [queryParams].
+typedef NavWidgetBuilder = Widget Function(
+    Map<String, String> params, Map<String, String> queryParams);
 
 /// Builds a transition widget that wraps [child] with an [animation].
 typedef NavTransitionBuilder = Widget Function(
@@ -13,7 +15,7 @@ typedef NavTransitionBuilder = Widget Function(
 /// prefixed with `:` (e.g. `/user/:id`).
 ///
 /// ```dart
-/// NavRoute('/profile/:id', (params) => ProfilePage(id: params['id']!));
+/// NavRoute('/profile/:id', (params, _) => ProfilePage(id: params['id']!));
 /// ```
 class NavRoute {
   /// URL-like path pattern, optionally containing `:param` segments.

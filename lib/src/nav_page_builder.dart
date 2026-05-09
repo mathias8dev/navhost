@@ -14,6 +14,7 @@ enum RoutePresentation {
 
 class _RouteEntry {
   final String path;
+  final Map<String, String> queryParams;
   final RoutePresentation presentation;
   final BottomSheetConfig? bottomSheetConfig;
   final DialogConfig? dialogConfig;
@@ -21,6 +22,7 @@ class _RouteEntry {
 
   const _RouteEntry(
     this.path, {
+    this.queryParams = const {},
     this.presentation = RoutePresentation.push,
     this.bottomSheetConfig,
     this.dialogConfig,
@@ -53,7 +55,7 @@ List<Page> _buildPages(
       if (match == null) continue;
       final (matchedRoute, params) = match;
       route = matchedRoute;
-      child = matchedRoute.builder(params);
+      child = matchedRoute.builder(params, entry.queryParams);
     }
 
     switch (entry.presentation) {

@@ -1,3 +1,11 @@
+## 0.1.3
+
+- **Breaking:** `NavWidgetBuilder` now receives two parameters: `params` (path) and `queryParams` (query string). Update route builders from `(_)` to `(_, _)`.
+- Query parameters are parsed from navigation paths and deep link URLs.
+- `NavBackStackEntry` exposes `queryParams` alongside `params`.
+- Deep links now preserve query parameters (e.g. `myapp://item/42?ref=email`).
+- Add migration guides from GoRouter, auto_route, Navigator 1.0, and GetX.
+
 ## 0.1.2
 
 - Add navhost_state companion package teaser to README.

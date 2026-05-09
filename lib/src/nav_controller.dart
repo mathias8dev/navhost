@@ -26,8 +26,8 @@ part 'nav_host.dart';
 /// ```dart
 /// final nav = NavController(
 ///   routes: [
-///     NavRoute('/', (_) => const HomePage()),
-///     NavRoute('/detail/:id', (p) => DetailPage(id: p['id']!)),
+///     NavRoute('/', (_, _) => const HomePage()),
+///     NavRoute('/detail/:id', (p, _) => DetailPage(id: p['id']!)),
 ///   ],
 /// );
 /// nav.navigate('/detail/42');
@@ -51,7 +51,7 @@ class NavController extends ChangeNotifier {
     required this.routes,
     this.initialRoute = '/',
     this.interceptors = const [],
-  }) : _stack = [_RouteEntry(initialRoute)];
+  }) : _stack = [_parseEntry(initialRoute)];
 
   /// Router delegate for use with [Router] widget.
   late final delegate = _NavRouterDelegate(this);
@@ -81,10 +81,35 @@ class NavController extends ChangeNotifier {
 
   NavBackStackEntry _toEntry(_RouteEntry entry) {
     final match = _matchPath(entry.path);
-    return NavBackStackEntry(path: entry.path, params: match?.$2 ?? const {});
+    return NavBackStackEntry(
+      path: entry.path,
+      params: match?.$2 ?? const {},
+      queryParams: entry.queryParams,
+    );
+  }
+
+  static _RouteEntry _parseEntry(String fullPath, {
+    RoutePresentation presentation = RoutePresentation.push,
+    BottomSheetConfig? bottomSheetConfig,
+    DialogConfig? dialogConfig,
+    Widget? inlineChild,
+  }) {
+    final uri = Uri.parse(fullPath);
+    return _RouteEntry(
+      uri.path,
+      queryParams: uri.queryParameters,
+      presentation: presentation,
+      bottomSheetConfig: bottomSheetConfig,
+      dialogConfig: dialogConfig,
+      inlineChild: inlineChild,
+    );
   }
 
   /// Navigates to [path], optionally clearing or trimming the stack.
+  ///
+  /// [path] may include query parameters (e.g. `/item/42?ref=email`).
+  /// They are available via [NavBackStackEntry.queryParams] and are passed
+  /// as the second argument to the route builder.
   ///
   /// When [replace] is `true` the entire stack is replaced with [path].
   /// When [launchSingleTop] is `true` and [path] is already the current
@@ -101,12 +126,14 @@ class NavController extends ChangeNotifier {
     final resolved = _applyInterceptors(path);
     if (resolved == null) return;
 
-    if (launchSingleTop && currentPath == resolved) return;
+    final entry = _parseEntry(resolved);
+
+    if (launchSingleTop && currentPath == entry.path) return;
 
     if (replace) {
       _stack
         ..clear()
-        ..add(_RouteEntry(resolved));
+        ..add(entry);
     } else {
       if (popUpTo != null) {
         while (_stack.length > 1 && _stack.last.path != popUpTo) {
@@ -118,7 +145,7 @@ class NavController extends ChangeNotifier {
           _stack.removeLast();
         }
       }
-      _stack.add(_RouteEntry(resolved));
+      _stack.add(entry);
     }
     notifyListeners();
   }
@@ -147,7 +174,7 @@ class NavController extends ChangeNotifier {
   /// Presents a route identified by [path] as a modal bottom sheet.
   void showBottomSheet(String path,
       {BottomSheetConfig config = const BottomSheetConfig()}) {
-    _stack.add(_RouteEntry(
+    _stack.add(_parseEntry(
       path,
       presentation: RoutePresentation.bottomSheet,
       bottomSheetConfig: config,
@@ -169,7 +196,7 @@ class NavController extends ChangeNotifier {
 
   /// Presents a route identified by [path] as a dialog.
   void showDialog(String path, {DialogConfig config = const DialogConfig()}) {
-    _stack.add(_RouteEntry(
+    _stack.add(_parseEntry(
       path,
       presentation: RoutePresentation.dialog,
       dialogConfig: config,
@@ -204,11 +231,12 @@ class NavController extends ChangeNotifier {
 
   /// Imperatively pushes the route for [path] and returns a [Future] with the result.
   Future<T?> push<T>(String path) {
-    final match = _matchPath(path);
+    final uri = Uri.parse(path);
+    final match = _matchPath(uri.path);
     assert(match != null, 'No route found for: $path');
     final (route, params) = match!;
     return navigator!.push<T>(MaterialPageRoute(
-      builder: (_) => route.builder(params),
+      builder: (_) => route.builder(params, uri.queryParameters),
     ));
   }
 
@@ -224,11 +252,12 @@ class NavController extends ChangeNotifier {
     String path, {
     BottomSheetConfig config = const BottomSheetConfig(),
   }) {
-    final match = _matchPath(path);
+    final uri = Uri.parse(path);
+    final match = _matchPath(uri.path);
     assert(match != null, 'No route found for: $path');
     final (route, params) = match!;
     return _showModalBottomSheet<T>(
-      child: route.builder(params),
+      child: route.builder(params, uri.queryParameters),
       config: config,
     );
   }
@@ -273,10 +302,12 @@ class NavController extends ChangeNotifier {
     String path, {
     DialogConfig config = const DialogConfig(),
   }) {
-    final match = _matchPath(path);
+    final uri = Uri.parse(path);
+    final match = _matchPath(uri.path);
     assert(match != null, 'No route found for: $path');
     final (route, params) = match!;
-    return _showDialog<T>(child: route.builder(params), config: config);
+    return _showDialog<T>(
+        child: route.builder(params, uri.queryParameters), config: config);
   }
 
   /// Imperatively shows an arbitrary [child] widget as a dialog, returning a [Future].

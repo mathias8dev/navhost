@@ -17,10 +17,11 @@ class _NavRouterDelegate extends RouterDelegate<String>
   @override
   Future<void> setNewRoutePath(String configuration) async {
     controller._stack.clear();
-    if (configuration != controller.initialRoute) {
-      controller._stack.add(_RouteEntry(controller.initialRoute));
+    final entry = NavController._parseEntry(configuration);
+    if (entry.path != controller.initialRoute) {
+      controller._stack.add(NavController._parseEntry(controller.initialRoute));
     }
-    controller._stack.add(_RouteEntry(configuration));
+    controller._stack.add(entry);
   }
 
   @override
@@ -40,7 +41,7 @@ class _NavRouteInformationParser extends RouteInformationParser<String> {
   @override
   Future<String> parseRouteInformation(
       RouteInformation routeInformation) async {
-    return routeInformation.uri.path;
+    return routeInformation.uri.toString();
   }
 
   @override

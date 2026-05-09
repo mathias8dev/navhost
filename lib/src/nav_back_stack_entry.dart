@@ -1,7 +1,8 @@
 /// A snapshot of a single entry in the navigation back stack.
 ///
-/// Each entry records the [path] that was navigated to and any route
-/// [params] extracted from path segments (e.g. `/user/:id` yields `{id: "42"}`).
+/// Each entry records the [path] that was navigated to, any route
+/// [params] extracted from path segments (e.g. `/user/:id` yields `{id: "42"}`),
+/// and any [queryParams] from the URL query string.
 class NavBackStackEntry {
   /// The route path for this entry (e.g. `/home` or `/user/42`).
   final String path;
@@ -9,9 +10,17 @@ class NavBackStackEntry {
   /// Path parameters extracted from dynamic segments.
   final Map<String, String> params;
 
-  /// Creates a back stack entry for the given [path] and optional [params].
-  const NavBackStackEntry({required this.path, this.params = const {}});
+  /// Query parameters from the URL (e.g. `?ref=email` yields `{ref: "email"}`).
+  final Map<String, String> queryParams;
+
+  /// Creates a back stack entry for the given [path] and optional [params] and [queryParams].
+  const NavBackStackEntry({
+    required this.path,
+    this.params = const {},
+    this.queryParams = const {},
+  });
 
   @override
-  String toString() => 'NavBackStackEntry(path: $path, params: $params)';
+  String toString() =>
+      'NavBackStackEntry(path: $path, params: $params, queryParams: $queryParams)';
 }

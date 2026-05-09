@@ -44,8 +44,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _navController = NavController(
     routes: [
-      NavRoute('/', (_) => const HomePage()),
-      NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+      NavRoute('/', (_, _) => const HomePage()),
+      NavRoute('/item/:id', (params, _) => DetailPage(id: params['id']!)),
     ],
   );
 
@@ -81,6 +81,23 @@ nav.pop();
 nav.popUntil('/home');
 nav.popUntil('/home', inclusive: true);
 ```
+
+### Query parameters
+
+Query parameters are parsed automatically and passed as the second argument to the route builder:
+
+```dart
+NavRoute('/detail', (params, queryParams) =>
+    DetailPage(ref: queryParams['ref'] ?? 'direct')),
+
+// Navigate with query params
+nav.navigate('/detail?ref=email&page=2');
+
+// Access via back stack entry
+nav.currentEntry.queryParams; // {ref: "email", page: "2"}
+```
+
+Path parameters and query parameters are kept separate — no naming conflicts.
 
 ### Transitions
 
@@ -215,23 +232,22 @@ nav.addListener(() {
 
 ## Deep links
 
-navhost supports deep links out of the box via `MaterialApp.router`. When the OS opens your app with a URL, the route is matched automatically against your defined routes — including path parameters.
+navhost supports deep links out of the box via `MaterialApp.router`. When the OS opens your app with a URL, the route is matched automatically against your defined routes — including path parameters and query parameters.
 
 ```dart
 // These routes handle deep links with no extra configuration
 final _navController = NavController(
   routes: [
-    NavRoute('/', (_) => const HomePage()),
-    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
-    NavRoute('/user/:uid/post/:pid', (params) => PostPage(
-      userId: params['uid']!,
-      postId: params['pid']!,
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/item/:id', (params, queryParams) => DetailPage(
+      id: params['id']!,
+      ref: queryParams['ref'],
     )),
   ],
 );
 ```
 
-Opening `https://example.com/item/42` or `myapp://item/42` navigates to `DetailPage(id: '42')` with the initial route underneath in the back stack, so the back button takes the user to `/`.
+Opening `https://example.com/item/42?ref=email` navigates to `DetailPage(id: '42', ref: 'email')` with the initial route underneath in the back stack, so the back button takes the user to `/`. Query parameters are fully preserved from the deep link URL.
 
 ### Android setup
 

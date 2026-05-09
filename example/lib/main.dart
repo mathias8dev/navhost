@@ -18,8 +18,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _navController = NavController(
     routes: [
-      NavRoute('/', (_) => const MainPage()),
-      NavRoute('/item/:id', (params) => DetailsPage(itemId: params['id']!)),
+      NavRoute('/', (_, _) => const MainPage()),
+      NavRoute('/item/:id', (params, _) => DetailsPage(itemId: params['id']!)),
     ],
   );
 
