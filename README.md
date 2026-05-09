@@ -4,6 +4,39 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
 
 `navhost` brings Jetpack Compose's `NavController` / `NavHost` mental model to Flutter — declarative back stack management, path-based routing with parameters, Compose-style 4-way transitions, interceptors, and modal support — all built on top of Flutter's standard Navigator 2.0 APIs.
 
+## Table of contents
+
+- [Features](#features)
+- [Getting started](#getting-started)
+- [Usage](#usage)
+  - [Basic setup](#basic-setup)
+  - [Navigation](#navigation)
+  - [Query parameters](#query-parameters)
+  - [Transitions](#transitions)
+  - [Interceptors](#interceptors)
+  - [Bottom sheets & dialogs](#bottom-sheets--dialogs)
+  - [Nested NavHost (tab navigation)](#nested-navhost-tab-navigation)
+  - [Back stack observation](#back-stack-observation)
+- [Deep links](#deep-links)
+  - [Android setup](#android-setup)
+  - [iOS setup](#ios-setup)
+  - [Testing deep links](#testing-deep-links)
+  - [Guarding deep links with interceptors](#guarding-deep-links-with-interceptors)
+- [Migrating from other routers](#migrating-from-other-routers)
+  - [From GoRouter](#from-gorouter)
+  - [From auto_route](#from-auto_route)
+  - [From Navigator 1.0](#from-navigator-10)
+  - [From GetX routing](#from-getx-routing)
+- [Using with other libraries](#using-with-other-libraries)
+  - [Provider](#provider)
+  - [Riverpod](#riverpod)
+  - [Bloc / Cubit](#bloc--cubit)
+  - [GetX](#getx)
+  - [get_it](#get_it)
+- [State management](#state-management)
+- [Example](#example)
+- [License](#license)
+
 ## Features
 
 - **Declarative navigation** — `navigate()`, `pop()`, `popUntil()`, `switchTo()` manage a back stack that drives `Navigator.pages`
@@ -484,6 +517,201 @@ context.navController.switchTo('/');
 - **Path parameters work the same** — `/item/:id` syntax is identical across most routers
 - **No code generation** — unlike auto_route, navhost routes are defined inline with no build step
 - **Transitions carry over** — navhost supports per-route and global transitions, same as GoRouter and auto_route
+
+## Using with other libraries
+
+navhost is just a navigation layer — it doesn't impose a state management solution. Your route builders are plain functions that return widgets, so you can wrap them with whatever provider, scope, or DI mechanism you already use.
+
+### Provider
+
+Wrap a route with `ChangeNotifierProvider` to scope a ViewModel to that route. When the route is popped, the provider is removed from the tree and the ViewModel is disposed automatically:
+
+```dart
+NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/counter', (_, _) => ChangeNotifierProvider(
+      create: (_) => CounterModel(),
+      child: const CounterPage(),
+    )),
+  ],
+)
+```
+
+```dart
+// CounterPage reads the model normally
+class CounterPage extends StatelessWidget {
+  const CounterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<CounterModel>();
+    return Text('${model.count}');
+  }
+}
+```
+
+For multiple providers on a single route:
+
+```dart
+NavRoute('/dashboard', (_, _) => MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (_) => StatsModel()),
+    ChangeNotifierProvider(create: (_) => NotificationsModel()),
+  ],
+  child: const DashboardPage(),
+)),
+```
+
+### Riverpod
+
+With Riverpod, state lives outside the widget tree, so routes don't need wrapping. Just use `ConsumerWidget` or `Consumer` in your pages:
+
+```dart
+// Providers defined at the top level
+final counterProvider = NotifierProvider<CounterNotifier, int>(
+  CounterNotifier.new,
+);
+
+// Routes — nothing special needed
+NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/counter', (_, _) => const CounterPage()),
+  ],
+)
+```
+
+```dart
+class CounterPage extends ConsumerWidget {
+  const CounterPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(counterProvider);
+    return Text('$count');
+  }
+}
+```
+
+For route-scoped state that auto-disposes when the page is removed, use `autoDispose`:
+
+```dart
+final counterProvider = NotifierProvider.autoDispose<CounterNotifier, int>(
+  CounterNotifier.new,
+);
+```
+
+### Bloc / Cubit
+
+Wrap a route with `BlocProvider` for route-scoped Blocs. The Bloc is created when the route is pushed and closed when it's popped:
+
+```dart
+NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/counter', (_, _) => BlocProvider(
+      create: (_) => CounterCubit(),
+      child: const CounterPage(),
+    )),
+    NavRoute('/item/:id', (params, _) => BlocProvider(
+      create: (_) => ItemCubit(id: params['id']!),
+      child: const ItemPage(),
+    )),
+  ],
+)
+```
+
+```dart
+class CounterPage extends StatelessWidget {
+  const CounterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CounterCubit, int>(
+      builder: (context, count) => Text('$count'),
+    );
+  }
+}
+```
+
+### GetX
+
+Instantiate controllers inside the route builder. Use `GetBuilder` or `Obx` in the page:
+
+```dart
+NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/counter', (_, _) {
+      Get.put(CounterController());
+      return const CounterPage();
+    }),
+  ],
+)
+```
+
+```dart
+class CounterPage extends StatelessWidget {
+  const CounterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<CounterController>();
+    return Obx(() => Text('${ctrl.count}'));
+  }
+}
+```
+
+### get_it
+
+Use [get_it](https://pub.dev/packages/get_it) to resolve dependencies in route builders:
+
+```dart
+// Registration
+final getIt = GetIt.instance;
+getIt.registerFactory(() => CounterViewModel());
+getIt.registerSingleton(ApiService());
+
+// Routes
+NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/counter', (_, _) => CounterPage(
+      vm: getIt<CounterViewModel>(),
+    )),
+    NavRoute('/item/:id', (params, _) => ItemPage(
+      vm: getIt<ItemViewModel>(param1: params['id']!),
+    )),
+  ],
+)
+```
+
+### Using path and query parameters with providers
+
+Route builders receive path parameters and query parameters, which you can pass into your providers or ViewModels:
+
+```dart
+NavRoute('/item/:id', (params, queryParams) => BlocProvider(
+  create: (_) => ItemCubit(
+    id: params['id']!,
+    ref: queryParams['ref'] ?? 'direct',
+  ),
+  child: const ItemPage(),
+)),
+```
+
+### Summary
+
+| Library | Pattern | Scoped to route? |
+|---------|---------|-----------------|
+| **Provider** | Wrap route with `ChangeNotifierProvider` | Yes — disposed on pop |
+| **Riverpod** | Use `ConsumerWidget`; add `.autoDispose` for scoping | Auto-dispose optional |
+| **Bloc** | Wrap route with `BlocProvider` | Yes — closed on pop |
+| **GetX** | Call `Get.put()` in route builder | Manual (`Get.delete`) |
+| **get_it** | Resolve in route builder via `getIt<T>()` | Depends on registration |
+
+The general rule: navhost route builders are widget factories — anything you can wrap around a widget in Flutter, you can use inside a route builder.
 
 ## State management
 

@@ -1,3 +1,8 @@
+## 0.1.5
+
+- Add "Using with other libraries" section with integration examples for Provider, Riverpod, Bloc, GetX, and get_it.
+- Add table of contents to README.
+
 ## 0.1.4
 
 - Fix README examples to use two-param route builders.
