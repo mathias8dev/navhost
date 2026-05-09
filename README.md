@@ -106,7 +106,7 @@ Per route:
 ```dart
 NavRoute(
   '/detail',
-  (_) => const DetailPage(),
+  (_, _) => const DetailPage(),
   enterTransition: (child, animation) =>
       SlideTransition(
         position: Tween(begin: const Offset(1, 0), end: Offset.zero)
@@ -191,9 +191,9 @@ class _MainPageState extends State<MainPage> {
   final _tabController = NavController(
     initialRoute: '/home',
     routes: [
-      NavRoute('/home', (_) => const HomePage()),
-      NavRoute('/settings', (_) => const SettingsPage()),
-      NavRoute('/item/:id', (p) => DetailPage(id: p['id']!)),
+      NavRoute('/home', (_, _) => const HomePage()),
+      NavRoute('/settings', (_, _) => const SettingsPage()),
+      NavRoute('/item/:id', (p, _) => DetailPage(id: p['id']!)),
     ],
   );
 
@@ -337,8 +337,8 @@ GoRouter(
 // navhost
 NavController(
   routes: [
-    NavRoute('/', (_) => const HomePage()),
-    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/item/:id', (params, _) => DetailPage(id: params['id']!)),
   ],
 )
 ```
@@ -397,8 +397,8 @@ class AppRouter extends RootStackRouter {
 // navhost — no code generation needed
 NavController(
   routes: [
-    NavRoute('/', (_) => const HomePage()),
-    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/item/:id', (params, _) => DetailPage(id: params['id']!)),
   ],
 )
 ```
@@ -445,8 +445,8 @@ Navigator.of(context).pushNamed('/settings');
 // navhost
 NavController(
   routes: [
-    NavRoute('/', (_) => const HomePage()),
-    NavRoute('/settings', (_) => const SettingsPage()),
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/settings', (_, _) => const SettingsPage()),
   ],
 )
 context.navController.navigate('/settings');
@@ -469,8 +469,8 @@ Get.offAllNamed('/');
 // navhost
 NavController(
   routes: [
-    NavRoute('/', (_) => const HomePage()),
-    NavRoute('/item/:id', (params) => DetailPage(id: params['id']!)),
+    NavRoute('/', (_, _) => const HomePage()),
+    NavRoute('/item/:id', (params, _) => DetailPage(id: params['id']!)),
   ],
 )
 context.navController.navigate('/item/42');

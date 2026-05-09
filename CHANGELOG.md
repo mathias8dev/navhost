@@ -1,3 +1,7 @@
+## 0.1.4
+
+- Fix README examples to use two-param route builders.
+
 ## 0.1.3
 
 - **Breaking:** `NavWidgetBuilder` now receives two parameters: `params` (path) and `queryParams` (query string). Update route builders from `(_)` to `(_, _)`.
