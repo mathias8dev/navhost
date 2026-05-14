@@ -55,7 +55,7 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
 
 ```yaml
 dependencies:
-  navhost: ^0.1.0
+  navhost: ^latest
 ```
 
 ```dart

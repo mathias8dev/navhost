@@ -1,3 +1,7 @@
+## 0.1.6
+
+- Update README getting started snippet to use `^latest` for the version constraint.
+
 ## 0.1.5
 
 - Add "Using with other libraries" section with integration examples for Provider, Riverpod, Bloc, GetX, and get_it.
