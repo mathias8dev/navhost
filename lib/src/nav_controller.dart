@@ -290,10 +290,9 @@ class NavController extends ChangeNotifier {
       anchorPoint: config.anchorPoint,
       useSafeArea: config.useSafeArea,
       sheetAnimationStyle: config.sheetAnimationStyle,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: config.heightFactor,
-        child: child,
-      ),
+      builder: (_) => config.heightFactor != null
+          ? FractionallySizedBox(heightFactor: config.heightFactor!, child: child)
+          : child,
     );
   }
 

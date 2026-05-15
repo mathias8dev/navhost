@@ -500,6 +500,41 @@ void main() {
     });
   });
 
+  group('BottomSheetConfig', () {
+    test('heightFactor defaults to null (auto-height)', () {
+      const config = BottomSheetConfig();
+      expect(config.heightFactor, isNull);
+    });
+
+    test('heightFactor can be set to a fixed value', () {
+      const config = BottomSheetConfig(heightFactor: 0.85);
+      expect(config.heightFactor, 0.85);
+    });
+
+    test('showBottomSheet uses default config with null heightFactor', () {
+      final nav = _createController();
+      nav.showBottomSheet('/a');
+      // entry is pushed regardless of config — config affects rendering only
+      expect(nav.currentPath, '/a');
+    });
+
+    test('showBottomSheetWidget uses default config with null heightFactor', () {
+      final nav = _createController();
+      nav.showBottomSheetWidget(const Text('Sheet'));
+      expect(nav.currentPath, startsWith('__sheet_'));
+    });
+
+    test('pop removes showBottomSheetWidget entry and returns to previous route', () {
+      final nav = _createController();
+      nav.showBottomSheetWidget(const Text('Sheet'));
+      expect(nav.backStack.length, 2);
+      nav.pop();
+      expect(nav.backStack.length, 1);
+      expect(nav.currentPath, '/');
+      expect(nav.canPop, false);
+    });
+  });
+
   group('navigateWidget', () {
     test('pushes synthetic entry', () {
       final nav = _createController();

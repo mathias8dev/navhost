@@ -193,12 +193,38 @@ Return `null` to allow, a different path to redirect, or `from` to block.
 Declarative (managed by the back stack):
 
 ```dart
+// Auto-height — sheet sizes to its content (default)
+nav.showBottomSheet('/item/1', config: const BottomSheetConfig(
+  showDragHandle: true,
+));
+
+// Fixed height — occupy 85% of screen height
 nav.showBottomSheet('/item/1', config: const BottomSheetConfig(
   heightFactor: 0.85,
   showDragHandle: true,
 ));
 
 nav.showDialog('/confirm');
+```
+
+Imperative without a route — pass a widget directly:
+
+```dart
+// Auto-height (default)
+nav.showBottomSheetWidget(
+  MyPickerWidget(
+    onSelected: (value) {
+      doSomething(value);
+      nav.pop();
+    },
+  ),
+);
+
+// Fixed height
+nav.showBottomSheetWidget(
+  MyPickerWidget(...),
+  config: const BottomSheetConfig(heightFactor: 0.5),
+);
 ```
 
 Imperative (returns a result):

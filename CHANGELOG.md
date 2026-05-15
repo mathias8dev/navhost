@@ -1,3 +1,7 @@
+## 0.1.7
+
+- `BottomSheetConfig.heightFactor` is now nullable. When `null` (the new default), bottom sheets size to their content instead of being constrained to a fixed screen fraction. Pass an explicit value (e.g. `heightFactor: 0.85`) to restore the previous behaviour.
+
 ## 0.1.6
 
 - Update README getting started snippet to use `^latest` for the version constraint.

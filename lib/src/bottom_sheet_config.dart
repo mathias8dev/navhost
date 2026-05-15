@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 /// to be passed through the navigation API.
 class BottomSheetConfig {
   /// Fraction of the screen height the sheet occupies, between 0.0 and 1.0.
-  final double heightFactor;
+  /// When null the sheet sizes itself to its content (auto-height).
+  final double? heightFactor;
 
   /// Semantic label for the modal barrier.
   final String? barrierLabel;
@@ -61,7 +62,7 @@ class BottomSheetConfig {
 
   /// Creates a bottom sheet configuration with sensible defaults.
   const BottomSheetConfig({
-    this.heightFactor = 0.85,
+    this.heightFactor,
     this.barrierLabel,
     this.barrierOnTapHint,
     this.backgroundColor,
