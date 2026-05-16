@@ -1,3 +1,16 @@
+## 0.1.10
+
+- README: fix four coherence issues — nested NavHost example now uses `_tabController.routes[i].path` consistently with the recommended pattern; fixed invalid Dart `_protectedRoutes.any(to.startsWith)` → `_protectedRoutes.any((r) => to.startsWith(r))`; removed phantom `AppRoutes.settings` reference and added missing `AppRoutes.orders` / `AppRoutes.onboarding` constants; replaced `to.startsWith(AppRoutes.detail)` (template string, never matches) with `to.startsWith(AppRoutes.profile)`.
+- README: expand NavHost defaults transition example with all four variants (`defaultEnterTransition`, `defaultExitTransition`, `defaultPopEnterTransition`, `defaultPopExitTransition`) — push uses fade, pop uses slide to distinguish the two directions. Add note that all transition parameters are optional.
+
+## 0.1.9
+
+- Add "Recommended patterns" section to README covering: route constants, typed path builders (`DetailPage.path()` and `AppRoutes.buildPath()`), IDs-in-URLs philosophy, interceptors for cross-cutting concerns, and `switchTo` vs `navigate` for tab navigation.
+
+## 0.1.8
+
+- Add migration guide from duck_router — covers route definition, router setup, navigation, and interceptors, with a comparison table of the key trade-offs between the two routers.
+
 ## 0.1.7
 
 - `BottomSheetConfig.heightFactor` is now nullable. When `null` (the new default), bottom sheets size to their content instead of being constrained to a fixed screen fraction. Pass an explicit value (e.g. `heightFactor: 0.85`) to restore the previous behaviour.
