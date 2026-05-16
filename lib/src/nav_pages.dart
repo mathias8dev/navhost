@@ -92,7 +92,7 @@ class _TransitionPage extends Page {
       settings: this,
       transitionDuration: duration,
       reverseTransitionDuration: reverseDuration,
-      pageBuilder: (_, _, _) => child,
+      pageBuilder: (context, animation, secondaryAnimation) => child,
       transitionsBuilder: (_, animation, secondaryAnimation, child) {
         final primary = animation.status == AnimationStatus.reverse
             ? (popExitTransition ?? enterTransition)

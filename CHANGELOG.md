@@ -1,3 +1,7 @@
+## 0.1.11
+
+- Broaden Dart SDK constraint from `^3.11.3` to `">=3.0.0"` for compatibility with a wider range of Flutter versions.
+
 ## 0.1.10
 
 - README: fix four coherence issues — nested NavHost example now uses `_tabController.routes[i].path` consistently with the recommended pattern; fixed invalid Dart `_protectedRoutes.any(to.startsWith)` → `_protectedRoutes.any((r) => to.startsWith(r))`; removed phantom `AppRoutes.settings` reference and added missing `AppRoutes.orders` / `AppRoutes.onboarding` constants; replaced `to.startsWith(AppRoutes.detail)` (template string, never matches) with `to.startsWith(AppRoutes.profile)`.

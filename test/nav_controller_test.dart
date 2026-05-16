@@ -11,10 +11,10 @@ NavController _createController({
     initialRoute: '/',
     interceptors: interceptors,
     routes: [
-      NavRoute('/', (_, _) => _page('Home')),
-      NavRoute('/a', (_, _) => _page('A')),
-      NavRoute('/b', (_, _) => _page('B')),
-      NavRoute('/c', (_, _) => _page('C')),
+      NavRoute('/', (p, q) => _page('Home')),
+      NavRoute('/a', (p, q) => _page('A')),
+      NavRoute('/b', (p, q) => _page('B')),
+      NavRoute('/c', (p, q) => _page('C')),
       NavRoute('/item/:id', (p, _) => _page('Item ${p['id']}')),
       NavRoute('/user/:uid/post/:pid',
           (p, _) => _page('User ${p['uid']} Post ${p['pid']}')),
@@ -310,7 +310,7 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
+          NavRoute('/', (p, q) => const Text('Home')),
           NavRoute('/detail', (_, q) => Text('ref:${q['ref']}')),
         ],
       );
@@ -327,7 +327,7 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
+          NavRoute('/', (p, q) => const Text('Home')),
           NavRoute(
               '/item/:id',
               (p, q) =>
@@ -564,7 +564,7 @@ void main() {
     testWidgets('renders initial route', (tester) async {
       final nav = NavController(
         initialRoute: '/',
-        routes: [NavRoute('/', (_, _) => const Text('Home'))],
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
       );
       await tester.pumpWidget(
         MaterialApp(home: NavHost(navController: nav)),
@@ -576,8 +576,8 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
-          NavRoute('/detail', (_, _) => const Text('Detail')),
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/detail', (p, q) => const Text('Detail')),
         ],
       );
       await tester.pumpWidget(
@@ -592,8 +592,8 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
-          NavRoute('/detail', (_, _) => const Text('Detail')),
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/detail', (p, q) => const Text('Detail')),
         ],
       );
       await tester.pumpWidget(
@@ -610,7 +610,7 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
+          NavRoute('/', (p, q) => const Text('Home')),
           NavRoute('/item/:id', (p, _) => Text('Item ${p['id']}')),
         ],
       );
@@ -625,7 +625,7 @@ void main() {
     testWidgets('renders inline widget', (tester) async {
       final nav = NavController(
         initialRoute: '/',
-        routes: [NavRoute('/', (_, _) => const Text('Home'))],
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
       );
       await tester.pumpWidget(
         MaterialApp(home: NavHost(navController: nav)),
@@ -639,8 +639,8 @@ void main() {
       final nav = NavController(
         initialRoute: '/a',
         routes: [
-          NavRoute('/a', (_, _) => const Text('A')),
-          NavRoute('/b', (_, _) => const Text('B')),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B')),
         ],
       );
       await tester.pumpWidget(
@@ -657,7 +657,7 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => Builder(
+          NavRoute('/', (p, q) => Builder(
                 builder: (context) {
                   found = NavController.of(context);
                   return const Text('Home');
@@ -677,15 +677,15 @@ void main() {
       final rootNav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Root')),
+          NavRoute('/', (p, q) => const Text('Root')),
         ],
       );
 
       final childNav = NavController(
         initialRoute: '/tab1',
         routes: [
-          NavRoute('/tab1', (_, _) => const Text('Tab 1')),
-          NavRoute('/tab2', (_, _) => const Text('Tab 2')),
+          NavRoute('/tab1', (p, q) => const Text('Tab 1')),
+          NavRoute('/tab2', (p, q) => const Text('Tab 2')),
         ],
       );
 
@@ -704,7 +704,7 @@ void main() {
         routes: [
           NavRoute(
             '/',
-            (_, _) => Column(
+            (p, q) => Column(
               children: [
                 const Text('Shell'),
                 Expanded(child: NavHost(navController: childNav)),
@@ -727,8 +727,8 @@ void main() {
       final childNav = NavController(
         initialRoute: '/tab1',
         routes: [
-          NavRoute('/tab1', (_, _) => const Text('Tab 1')),
-          NavRoute('/tab2', (_, _) => const Text('Tab 2')),
+          NavRoute('/tab1', (p, q) => const Text('Tab 1')),
+          NavRoute('/tab2', (p, q) => const Text('Tab 2')),
         ],
       );
 
@@ -755,8 +755,8 @@ void main() {
       final tabNav = NavController(
         initialRoute: '/home',
         routes: [
-          NavRoute('/home', (_, _) => const Text('Home Tab')),
-          NavRoute('/settings', (_, _) => const Text('Settings Tab')),
+          NavRoute('/home', (p, q) => const Text('Home Tab')),
+          NavRoute('/settings', (p, q) => const Text('Settings Tab')),
         ],
       );
 
@@ -784,15 +784,15 @@ void main() {
       final nav1 = NavController(
         initialRoute: '/a',
         routes: [
-          NavRoute('/a', (_, _) => const Text('Nav1-A')),
-          NavRoute('/b', (_, _) => const Text('Nav1-B')),
+          NavRoute('/a', (p, q) => const Text('Nav1-A')),
+          NavRoute('/b', (p, q) => const Text('Nav1-B')),
         ],
       );
       final nav2 = NavController(
         initialRoute: '/x',
         routes: [
-          NavRoute('/x', (_, _) => const Text('Nav2-X')),
-          NavRoute('/y', (_, _) => const Text('Nav2-Y')),
+          NavRoute('/x', (p, q) => const Text('Nav2-X')),
+          NavRoute('/y', (p, q) => const Text('Nav2-Y')),
         ],
       );
 
@@ -832,9 +832,9 @@ void main() {
       final childNav = NavController(
         initialRoute: '/p1',
         routes: [
-          NavRoute('/p1', (_, _) => const Text('P1')),
-          NavRoute('/p2', (_, _) => const Text('P2')),
-          NavRoute('/p3', (_, _) => const Text('P3')),
+          NavRoute('/p1', (p, q) => const Text('P1')),
+          NavRoute('/p2', (p, q) => const Text('P2')),
+          NavRoute('/p3', (p, q) => const Text('P3')),
         ],
       );
 
@@ -865,7 +865,7 @@ void main() {
       final rootNav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Root')),
+          NavRoute('/', (p, q) => const Text('Root')),
         ],
       );
       final childNav = NavController(
@@ -873,7 +873,7 @@ void main() {
         routes: [
           NavRoute(
             '/child',
-            (_, _) => Builder(
+            (p, q) => Builder(
               builder: (context) {
                 foundInChild = NavController.of(context);
                 return const Text('Child');
@@ -899,7 +899,7 @@ void main() {
         routes: [
           NavRoute(
             '/',
-            (_, _) => NavHost(navController: childNav),
+            (p, q) => NavHost(navController: childNav),
           ),
         ],
       );
@@ -920,8 +920,8 @@ void main() {
       final childNav = NavController(
         initialRoute: '/a',
         routes: [
-          NavRoute('/a', (_, _) => const Text('A')),
-          NavRoute('/b', (_, _) => const Text('B')),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B')),
         ],
       );
 
@@ -953,8 +953,8 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Root')),
-          NavRoute('/page', (_, _) => const Text('Page')),
+          NavRoute('/', (p, q) => const Text('Root')),
+          NavRoute('/page', (p, q) => const Text('Page')),
         ],
       );
       await tester.pumpWidget(MaterialApp.router(
@@ -1106,11 +1106,11 @@ void main() {
         (tester) async {
       final nav1 = NavController(
         initialRoute: '/a',
-        routes: [NavRoute('/a', (_, _) => const Text('A'))],
+        routes: [NavRoute('/a', (p, q) => const Text('A'))],
       );
       final nav2 = NavController(
         initialRoute: '/b',
-        routes: [NavRoute('/b', (_, _) => const Text('B'))],
+        routes: [NavRoute('/b', (p, q) => const Text('B'))],
       );
 
       late StateSetter outerSetState;
@@ -1143,8 +1143,8 @@ void main() {
       final nav = NavController(
         initialRoute: '/a',
         routes: [
-          NavRoute('/a', (_, _) => const Text('A')),
-          NavRoute('/b', (_, _) => const Text('B'),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B'),
               enterTransition: (child, animation) {
             usedRouteTransition = true;
             return FadeTransition(opacity: animation, child: child);
@@ -1181,7 +1181,7 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (_, _) => const Text('Home')),
+          NavRoute('/', (p, q) => const Text('Home')),
         ],
       );
       await tester.pumpWidget(

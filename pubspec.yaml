@@ -1,11 +1,11 @@
 name: navhost
 description: A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0 with NavController, NavHost, transitions, interceptors, and bottom sheet/dialog support.
-version: 0.1.10
+version: 0.1.11
 homepage: https://github.com/mathias8dev/navhost
 repository: https://github.com/mathias8dev/navhost
 
 environment:
-  sdk: ^3.11.3
+  sdk: ">=3.0.0 <4.0.0"
   flutter: ">=3.0.0"
 
 dependencies:
