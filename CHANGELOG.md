@@ -1,3 +1,22 @@
+## 0.2.0
+
+### Async results
+
+- `navigate()`, `switchTo()`, `navigateWidget()`, `showBottomSheet()`, `showBottomSheetWidget()`, `showDialog()`, `showDialogWidget()` now return `Future<T?>` that resolves when the pushed route is popped.
+- `pop([T? result])` accepts an optional result forwarded to the awaiting caller.
+- Routes removed by `popUpTo`, `popUntil`, `popUntilWhere`, or `replace`/`switchTo` have their pending futures completed with `null`.
+- `launchSingleTop` skipped navigation returns the existing top entry's future instead of an immediate `null`, so the caller still receives the result when the route is eventually popped.
+- Imperative push methods (`push`, `pushWidget`, `pushBottomSheet`, `pushBottomSheetWidget`, `pushDialog`, `pushDialogWidget`) already returned `Future<T?>`; they now integrate consistently with the declarative result system.
+
+### Bug fixes
+
+- Fix nested NavHost back button: `canPop` reverted to `_stack.length > 1`. Using `navigator?.canPop()` was stale at build time, causing the inner NavHost's `PopScope` to miss stack updates and fail to intercept the outer navigator's `maybePop()`.
+
+### Internal
+
+- Source split: imperative methods moved to `nav_controller_imperative.dart`, overlay/modal methods to `nav_controller_overlays.dart`, path matching to `nav_route_matcher.dart`.
+- Test suite expanded to 118 tests and split into `nav_controller_test.dart` (stack logic), `nav_host_test.dart` (rendering, transitions, back button), and `nav_results_test.dart` (future/result propagation).
+
 ## 0.1.11
 
 - Broaden Dart SDK constraint from `^3.11.3` to `">=3.0.0"` for compatibility with a wider range of Flutter versions.
