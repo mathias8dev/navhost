@@ -3,16 +3,18 @@ part of 'nav_controller.dart';
 class _DialogPage extends Page {
   final Widget child;
   final DialogConfig config;
+  final Completer<dynamic>? completer;
 
   const _DialogPage({
     super.key,
     required this.child,
     required this.config,
+    this.completer,
   });
 
   @override
   Route createRoute(BuildContext context) {
-    return DialogRoute(
+    final route = DialogRoute(
       context: context,
       settings: this,
       barrierDismissible: config.barrierDismissible,
@@ -23,22 +25,32 @@ class _DialogPage extends Page {
       traversalEdgeBehavior: config.traversalEdgeBehavior,
       builder: (_) => child,
     );
+    if (completer != null) {
+      route.popped.then((result) {
+        if (!completer!.isCompleted) {
+          completer!.complete(result);
+        }
+      });
+    }
+    return route;
   }
 }
 
 class _BottomSheetPage extends Page {
   final Widget child;
   final BottomSheetConfig config;
+  final Completer<dynamic>? completer;
 
   const _BottomSheetPage({
     super.key,
     required this.child,
     required this.config,
+    this.completer,
   });
 
   @override
   Route createRoute(BuildContext context) {
-    return ModalBottomSheetRoute(
+    final route = ModalBottomSheetRoute(
       settings: this,
       isScrollControlled: true,
       scrollControlDisabledMaxHeightRatio:
@@ -60,9 +72,18 @@ class _BottomSheetPage extends Page {
       useSafeArea: config.useSafeArea,
       sheetAnimationStyle: config.sheetAnimationStyle,
       builder: (_) => config.heightFactor != null
-          ? FractionallySizedBox(heightFactor: config.heightFactor!, child: child)
+          ? FractionallySizedBox(
+              heightFactor: config.heightFactor!, child: child)
           : child,
     );
+    if (completer != null) {
+      route.popped.then((result) {
+        if (!completer!.isCompleted) {
+          completer!.complete(result);
+        }
+      });
+    }
+    return route;
   }
 }
 
@@ -74,6 +95,7 @@ class _TransitionPage extends Page {
   final NavTransitionBuilder? popExitTransition;
   final Duration duration;
   final Duration reverseDuration;
+  final Completer<dynamic>? completer;
 
   const _TransitionPage({
     super.key,
@@ -84,11 +106,12 @@ class _TransitionPage extends Page {
     this.popExitTransition,
     required this.duration,
     required this.reverseDuration,
+    this.completer,
   });
 
   @override
   Route createRoute(BuildContext context) {
-    return PageRouteBuilder(
+    final route = PageRouteBuilder(
       settings: this,
       transitionDuration: duration,
       reverseTransitionDuration: reverseDuration,
@@ -109,5 +132,36 @@ class _TransitionPage extends Page {
         return result;
       },
     );
+    if (completer != null) {
+      route.popped.then((result) {
+        if (!completer!.isCompleted) {
+          completer!.complete(result);
+        }
+      });
+    }
+    return route;
+  }
+}
+
+class _MaterialPage<T> extends MaterialPage<T> {
+  final Completer<dynamic>? completer;
+
+  const _MaterialPage({
+    required super.child,
+    super.key,
+    this.completer,
+  });
+
+  @override
+  Route<T> createRoute(BuildContext context) {
+    final route = super.createRoute(context);
+    if (completer != null) {
+      route.popped.then((result) {
+        if (!completer!.isCompleted) {
+          completer!.complete(result);
+        }
+      });
+    }
+    return route;
   }
 }

@@ -81,8 +81,8 @@ void main() {
       nav.navigate('/c');
       expect(nav.currentPath, '/c');
       expect(nav.backStack.length, 4);
-      expect(nav.backStack.map((e) => e.path).toList(),
-          ['/', '/a', '/b', '/c']);
+      expect(
+          nav.backStack.map((e) => e.path).toList(), ['/', '/a', '/b', '/c']);
     });
 
     test('notifies listeners', () {
@@ -328,10 +328,8 @@ void main() {
         initialRoute: '/',
         routes: [
           NavRoute('/', (p, q) => const Text('Home')),
-          NavRoute(
-              '/item/:id',
-              (p, q) =>
-                  Text('id:${p['id']},ref:${q['ref']},src:${q['src']}')),
+          NavRoute('/item/:id',
+              (p, q) => Text('id:${p['id']},ref:${q['ref']},src:${q['src']}')),
         ],
       );
       await tester.pumpWidget(
@@ -347,8 +345,7 @@ void main() {
       nav.navigate('/user/7/post/99?lang=en&draft=true');
       expect(nav.currentEntry.path, '/user/7/post/99');
       expect(nav.currentEntry.params, {'uid': '7', 'pid': '99'});
-      expect(
-          nav.currentEntry.queryParams, {'lang': 'en', 'draft': 'true'});
+      expect(nav.currentEntry.queryParams, {'lang': 'en', 'draft': 'true'});
     });
 
     test('query params not affected by pop', () {
@@ -518,13 +515,16 @@ void main() {
       expect(nav.currentPath, '/a');
     });
 
-    test('showBottomSheetWidget uses default config with null heightFactor', () {
+    test('showBottomSheetWidget uses default config with null heightFactor',
+        () {
       final nav = _createController();
       nav.showBottomSheetWidget(const Text('Sheet'));
       expect(nav.currentPath, startsWith('__sheet_'));
     });
 
-    test('pop removes showBottomSheetWidget entry and returns to previous route', () {
+    test(
+        'pop removes showBottomSheetWidget entry and returns to previous route',
+        () {
       final nav = _createController();
       nav.showBottomSheetWidget(const Text('Sheet'));
       expect(nav.backStack.length, 2);
@@ -657,12 +657,14 @@ void main() {
       final nav = NavController(
         initialRoute: '/',
         routes: [
-          NavRoute('/', (p, q) => Builder(
-                builder: (context) {
-                  found = NavController.of(context);
-                  return const Text('Home');
-                },
-              )),
+          NavRoute(
+              '/',
+              (p, q) => Builder(
+                    builder: (context) {
+                      found = NavController.of(context);
+                      return const Text('Home');
+                    },
+                  )),
         ],
       );
       await tester.pumpWidget(
@@ -827,8 +829,7 @@ void main() {
       expect(nav2.currentPath, '/x');
     });
 
-    testWidgets('child NavHost deep navigation and popUntil',
-        (tester) async {
+    testWidgets('child NavHost deep navigation and popUntil', (tester) async {
       final childNav = NavController(
         initialRoute: '/p1',
         routes: [
@@ -859,8 +860,7 @@ void main() {
       expect(childNav.backStack.length, 1);
     });
 
-    testWidgets('NavController.of returns nearest controller',
-        (tester) async {
+    testWidgets('NavController.of returns nearest controller', (tester) async {
       late NavController foundInChild;
       final rootNav = NavController(
         initialRoute: '/',
@@ -969,8 +969,7 @@ void main() {
   });
 
   group('Edge cases', () {
-    test('navigate to same path without launchSingleTop allows duplicates',
-        () {
+    test('navigate to same path without launchSingleTop allows duplicates', () {
       final nav = _createController();
       nav.navigate('/a');
       nav.navigate('/a');
@@ -1038,15 +1037,14 @@ void main() {
       expect(nav.currentPath, '/a');
     });
 
-    test('mixed presentation sequence — navigate, sheet, dialog, pop all',
-        () {
+    test('mixed presentation sequence — navigate, sheet, dialog, pop all', () {
       final nav = _createController();
       nav.navigate('/a');
       nav.showBottomSheet('/b');
       nav.showDialog('/c');
       expect(nav.backStack.length, 4);
-      expect(nav.backStack.map((e) => e.path).toList(),
-          ['/', '/a', '/b', '/c']);
+      expect(
+          nav.backStack.map((e) => e.path).toList(), ['/', '/a', '/b', '/c']);
 
       nav.pop();
       expect(nav.currentPath, '/b');
@@ -1087,8 +1085,7 @@ void main() {
       nav.navigate('/b');
       nav.navigate('/c');
       nav.navigate('/new', popUpTo: '/a', popUpToInclusive: true);
-      expect(
-          nav.backStack.map((e) => e.path).toList(), ['/', '/new']);
+      expect(nav.backStack.map((e) => e.path).toList(), ['/', '/new']);
     });
 
     test('currentEntry params after interceptor redirect', () {
@@ -1102,8 +1099,7 @@ void main() {
       expect(nav.currentEntry.params, {'id': '99'});
     });
 
-    testWidgets('NavHost controller swap via didUpdateWidget',
-        (tester) async {
+    testWidgets('NavHost controller swap via didUpdateWidget', (tester) async {
       final nav1 = NavController(
         initialRoute: '/a',
         routes: [NavRoute('/a', (p, q) => const Text('A'))],
@@ -1157,14 +1153,13 @@ void main() {
           home: Scaffold(
             body: NavHost(
               navController: nav,
-              defaultEnterTransition: (child, animation) =>
-                  SlideTransition(
-                    position: Tween(
-                      begin: const Offset(1, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
+              defaultEnterTransition: (child, animation) => SlideTransition(
+                position: Tween(
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
             ),
           ),
         ),
@@ -1176,8 +1171,7 @@ void main() {
       expect(usedRouteTransition, true);
     });
 
-    testWidgets('unmatched route is skipped in rendered pages',
-        (tester) async {
+    testWidgets('unmatched route is skipped in rendered pages', (tester) async {
       final nav = NavController(
         initialRoute: '/',
         routes: [
@@ -1194,6 +1188,221 @@ void main() {
       // /unknown has no matching route, so _buildPages skips it
       // Home should still be visible as the last rendered page
       expect(find.text('Home'), findsOneWidget);
+    });
+  });
+
+  group('Awaiting results (Declarative & Imperative)', () {
+    testWidgets('navigate and pop with result', (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/detail', (p, q) => const Text('Detail')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final future = nav.navigate<String>('/detail');
+      await tester.pumpAndSettle();
+      expect(find.text('Detail'), findsOneWidget);
+
+      nav.pop('hello');
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+
+      final result = await future;
+      expect(result, 'hello');
+    });
+
+    testWidgets('showBottomSheet and pop with result', (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/sheet', (p, q) => const Text('Sheet')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final future = nav.showBottomSheet<int>('/sheet');
+      await tester.pumpAndSettle();
+      expect(find.text('Sheet'), findsOneWidget);
+
+      nav.pop(42);
+      await tester.pumpAndSettle();
+
+      final result = await future;
+      expect(result, 42);
+    });
+
+    testWidgets('showDialog and pop with result', (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/dialog', (p, q) => const Text('Dialog')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final future = nav.showDialog<bool>('/dialog');
+      await tester.pumpAndSettle();
+      expect(find.text('Dialog'), findsOneWidget);
+
+      nav.pop(true);
+      await tester.pumpAndSettle();
+
+      final result = await future;
+      expect(result, true);
+    });
+
+    testWidgets('hanging futures complete with null on replace',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final futureA = nav.navigate<String>('/a');
+      await tester.pumpAndSettle();
+
+      nav.switchTo('/b');
+      await tester.pumpAndSettle();
+
+      final resultA = await futureA;
+      expect(resultA, isNull);
+    });
+
+    testWidgets('hanging futures complete with null on popUpTo',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B')),
+          NavRoute('/c', (p, q) => const Text('C')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      nav.navigate('/a');
+      await tester.pumpAndSettle();
+      final futureB = nav.navigate<String>('/b');
+      await tester.pumpAndSettle();
+
+      // Navigate to C, popping up to /a (which removes /b)
+      nav.navigate('/c', popUpTo: '/a');
+      await tester.pumpAndSettle();
+
+      final resultB = await futureB;
+      expect(resultB, isNull);
+    });
+
+    testWidgets('mix declarative and imperative pushes with result',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/detail', (p, q) => const Text('Detail')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      // Imperative push (returns Future)
+      final future = nav.push<String>('/detail');
+      await tester.pumpAndSettle();
+      expect(find.text('Detail'), findsOneWidget);
+
+      // Navigator pop
+      nav.pop('imperative_result');
+      await tester.pumpAndSettle();
+
+      final result = await future;
+      expect(result, 'imperative_result');
+    });
+
+    testWidgets('mix pushBottomSheet and declarative pop', (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/sheet', (p, q) => const Text('Sheet')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final future = nav.pushBottomSheet<int>('/sheet');
+      await tester.pumpAndSettle();
+      expect(find.text('Sheet'), findsOneWidget);
+
+      nav.pop(99);
+      await tester.pumpAndSettle();
+
+      final result = await future;
+      expect(result, 99);
+    });
+
+    testWidgets('mixing context.navigator.pop with declarative navigation',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute(
+              '/detail',
+              (p, q) => Builder(
+                    builder: (context) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop('from_navigator');
+                        },
+                        child: const Text('Detail'),
+                      );
+                    },
+                  )),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      final future = nav.navigate<String>('/detail');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Detail'));
+      await tester.pumpAndSettle();
+
+      final result = await future;
+      expect(result, 'from_navigator');
     });
   });
 }

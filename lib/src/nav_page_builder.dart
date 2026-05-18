@@ -19,6 +19,7 @@ class _RouteEntry {
   final BottomSheetConfig? bottomSheetConfig;
   final DialogConfig? dialogConfig;
   final Widget? inlineChild;
+  final Completer<dynamic>? completer;
 
   const _RouteEntry(
     this.path, {
@@ -27,6 +28,7 @@ class _RouteEntry {
     this.bottomSheetConfig,
     this.dialogConfig,
     this.inlineChild,
+    this.completer,
   });
 }
 
@@ -64,12 +66,14 @@ List<Page> _buildPages(
           key: key,
           child: child,
           config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
+          completer: entry.completer,
         ));
       case RoutePresentation.dialog:
         pages.add(_DialogPage(
           key: key,
           child: child,
           config: entry.dialogConfig ?? const DialogConfig(),
+          completer: entry.completer,
         ));
       case RoutePresentation.push:
         final enter = route?.enterTransition ?? defaultEnterTransition;
@@ -89,9 +93,14 @@ List<Page> _buildPages(
             reverseDuration: route?.reverseTransitionDuration ??
                 defaultReverseTransitionDuration ??
                 duration,
+            completer: entry.completer,
           ));
         } else {
-          pages.add(MaterialPage(key: key, child: child));
+          pages.add(_MaterialPage(
+            key: key,
+            child: child,
+            completer: entry.completer,
+          ));
         }
     }
   }

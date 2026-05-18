@@ -97,7 +97,7 @@ class _NavHostState extends State<NavHost> {
             defaultReverseTransitionDuration:
                 widget.defaultReverseTransitionDuration,
           ),
-          onDidRemovePage: (_) => widget.navController.pop(),
+          onDidRemovePage: (_) => widget.navController._syncStack(),
         ),
       ),
     );

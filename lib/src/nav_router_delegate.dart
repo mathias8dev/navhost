@@ -31,7 +31,7 @@ class _NavRouterDelegate extends RouterDelegate<String>
       child: Navigator(
         key: navigatorKey,
         pages: _buildPages(controller),
-        onDidRemovePage: (_) => controller.pop(),
+        onDidRemovePage: (_) => controller._syncStack(),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'bottom_sheet_config.dart';
@@ -11,8 +13,11 @@ export 'nav_back_stack_entry.dart' show NavBackStackEntry;
 export 'nav_interceptor.dart' show NavInterceptor;
 export 'nav_route.dart' show NavTransitionBuilder;
 
+part 'nav_controller_imperative.dart';
+part 'nav_controller_overlays.dart';
 part 'nav_page_builder.dart';
 part 'nav_pages.dart';
+part 'nav_route_matcher.dart';
 part 'nav_router_delegate.dart';
 part 'nav_host.dart';
 
@@ -66,7 +71,7 @@ class NavController extends ChangeNotifier {
   String get currentPath => _stack.last.path;
 
   /// Whether there is more than one entry on the stack.
-  bool get canPop => _stack.length > 1;
+  bool get canPop => navigator?.canPop() ?? _stack.length > 1;
 
   /// A [NavBackStackEntry] for the current (topmost) route.
   NavBackStackEntry get currentEntry => _toEntry(_stack.last);
@@ -88,11 +93,15 @@ class NavController extends ChangeNotifier {
     );
   }
 
-  static _RouteEntry _parseEntry(String fullPath, {
+  void _notify() => notifyListeners();
+
+  static _RouteEntry _parseEntry(
+    String fullPath, {
     RoutePresentation presentation = RoutePresentation.push,
     BottomSheetConfig? bottomSheetConfig,
     DialogConfig? dialogConfig,
     Widget? inlineChild,
+    Completer<dynamic>? completer,
   }) {
     final uri = Uri.parse(fullPath);
     return _RouteEntry(
@@ -102,6 +111,7 @@ class NavController extends ChangeNotifier {
       bottomSheetConfig: bottomSheetConfig,
       dialogConfig: dialogConfig,
       inlineChild: inlineChild,
+      completer: completer,
     );
   }
 
@@ -116,7 +126,7 @@ class NavController extends ChangeNotifier {
   /// route, navigation is skipped.
   /// [popUpTo] pops routes until the given path is reached before pushing;
   /// set [popUpToInclusive] to also remove the target itself.
-  void navigate(
+  Future<T?> navigate<T extends Object?>(
     String path, {
     bool replace = false,
     bool launchSingleTop = false,
@@ -124,214 +134,79 @@ class NavController extends ChangeNotifier {
     bool popUpToInclusive = false,
   }) {
     final resolved = _applyInterceptors(path);
-    if (resolved == null) return;
+    if (resolved == null) return Future.value(null);
 
-    final entry = _parseEntry(resolved);
+    final completer = Completer<T?>();
+    final entry = _parseEntry(resolved, completer: completer);
 
-    if (launchSingleTop && currentPath == entry.path) return;
+    if (launchSingleTop && currentPath == entry.path) return Future.value(null);
 
     if (replace) {
+      for (final e in _stack) {
+        if (e.completer != null && !e.completer!.isCompleted) {
+          e.completer!.complete(null);
+        }
+      }
       _stack
         ..clear()
         ..add(entry);
     } else {
       if (popUpTo != null) {
         while (_stack.length > 1 && _stack.last.path != popUpTo) {
-          _stack.removeLast();
+          final removed = _stack.removeLast();
+          if (removed.completer != null && !removed.completer!.isCompleted) {
+            removed.completer!.complete(null);
+          }
         }
         if (popUpToInclusive &&
             _stack.isNotEmpty &&
             _stack.last.path == popUpTo) {
-          _stack.removeLast();
+          final removed = _stack.removeLast();
+          if (removed.completer != null && !removed.completer!.isCompleted) {
+            removed.completer!.complete(null);
+          }
         }
       }
       _stack.add(entry);
     }
     notifyListeners();
-  }
-
-  String? _applyInterceptors(String to) {
-    var target = to;
-    for (final interceptor in interceptors) {
-      final result = interceptor.intercept(currentPath, target);
-      if (result == currentPath) return null;
-      if (result != null) target = result;
-    }
-    return target;
+    return completer.future;
   }
 
   int _syntheticId = 0;
 
-  /// Pushes an arbitrary [child] widget onto the declarative stack.
-  void navigateWidget(Widget child) {
-    _stack.add(_RouteEntry(
-      '__page_${_syntheticId++}',
-      inlineChild: child,
-    ));
-    notifyListeners();
-  }
-
-  /// Presents a route identified by [path] as a modal bottom sheet.
-  void showBottomSheet(String path,
-      {BottomSheetConfig config = const BottomSheetConfig()}) {
-    _stack.add(_parseEntry(
-      path,
-      presentation: RoutePresentation.bottomSheet,
-      bottomSheetConfig: config,
-    ));
-    notifyListeners();
-  }
-
-  /// Presents an arbitrary [child] widget as a modal bottom sheet.
-  void showBottomSheetWidget(Widget child,
-      {BottomSheetConfig config = const BottomSheetConfig()}) {
-    _stack.add(_RouteEntry(
-      '__sheet_${_syntheticId++}',
-      presentation: RoutePresentation.bottomSheet,
-      bottomSheetConfig: config,
-      inlineChild: child,
-    ));
-    notifyListeners();
-  }
-
-  /// Presents a route identified by [path] as a dialog.
-  void showDialog(String path, {DialogConfig config = const DialogConfig()}) {
-    _stack.add(_parseEntry(
-      path,
-      presentation: RoutePresentation.dialog,
-      dialogConfig: config,
-    ));
-    notifyListeners();
-  }
-
-  /// Presents an arbitrary [child] widget as a dialog.
-  void showDialogWidget(Widget child,
-      {DialogConfig config = const DialogConfig()}) {
-    _stack.add(_RouteEntry(
-      '__dialog_${_syntheticId++}',
-      presentation: RoutePresentation.dialog,
-      dialogConfig: config,
-      inlineChild: child,
-    ));
-    notifyListeners();
-  }
-
   /// Replaces the entire stack with a single entry for [path].
-  void switchTo(String path) => navigate(path, replace: true);
+  Future<T?> switchTo<T extends Object?>(String path) =>
+      navigate<T>(path, replace: true);
 
-  /// Removes the topmost entry from the stack, if possible.
-  void pop() {
-    if (canPop) {
-      _stack.removeLast();
-      notifyListeners();
+  /// Removes the topmost route, if possible.
+  /// Always delegates to the Navigator — works for both declarative and imperative routes.
+  /// An optional [result] is forwarded to the awaiting [push] caller.
+  void pop<T extends Object?>([T? result]) {
+    if (navigator != null) {
+      navigator!.pop<T>(result);
+    } else {
+      if (canPop) {
+        final removed = _stack.removeLast();
+        if (removed.completer != null && !removed.completer!.isCompleted) {
+          removed.completer!.complete(result);
+        }
+        notifyListeners();
+      }
     }
   }
 
-  // --- Imperative methods (bypass stack, return results) ---
-
-  /// Imperatively pushes the route for [path] and returns a [Future] with the result.
-  Future<T?> push<T>(String path) {
-    final uri = Uri.parse(path);
-    final match = _matchPath(uri.path);
-    assert(match != null, 'No route found for: $path');
-    final (route, params) = match!;
-    return navigator!.push<T>(MaterialPageRoute(
-      builder: (_) => route.builder(params, uri.queryParameters),
-    ));
-  }
-
-  /// Imperatively pushes an arbitrary [child] widget and returns a [Future] with the result.
-  Future<T?> pushWidget<T>(Widget child) {
-    return navigator!.push<T>(MaterialPageRoute(
-      builder: (_) => child,
-    ));
-  }
-
-  /// Imperatively shows the route for [path] as a bottom sheet, returning a [Future].
-  Future<T?> pushBottomSheet<T>(
-    String path, {
-    BottomSheetConfig config = const BottomSheetConfig(),
-  }) {
-    final uri = Uri.parse(path);
-    final match = _matchPath(uri.path);
-    assert(match != null, 'No route found for: $path');
-    final (route, params) = match!;
-    return _showModalBottomSheet<T>(
-      child: route.builder(params, uri.queryParameters),
-      config: config,
-    );
-  }
-
-  /// Imperatively shows an arbitrary [child] widget as a bottom sheet, returning a [Future].
-  Future<T?> pushBottomSheetWidget<T>(
-    Widget child, {
-    BottomSheetConfig config = const BottomSheetConfig(),
-  }) {
-    return _showModalBottomSheet<T>(child: child, config: config);
-  }
-
-  Future<T?> _showModalBottomSheet<T>({
-    required Widget child,
-    required BottomSheetConfig config,
-  }) {
-    final context = navigatorKey.currentContext!;
-    return showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: config.backgroundColor,
-      elevation: config.elevation,
-      shape: config.shape,
-      clipBehavior: config.clipBehavior,
-      constraints: config.constraints,
-      barrierColor: config.modalBarrierColor,
-      isDismissible: config.isDismissible,
-      enableDrag: config.enableDrag,
-      showDragHandle: config.showDragHandle,
-      anchorPoint: config.anchorPoint,
-      useSafeArea: config.useSafeArea,
-      sheetAnimationStyle: config.sheetAnimationStyle,
-      builder: (_) => config.heightFactor != null
-          ? FractionallySizedBox(heightFactor: config.heightFactor!, child: child)
-          : child,
-    );
-  }
-
-  /// Imperatively shows the route for [path] as a dialog, returning a [Future].
-  Future<T?> pushDialog<T>(
-    String path, {
-    DialogConfig config = const DialogConfig(),
-  }) {
-    final uri = Uri.parse(path);
-    final match = _matchPath(uri.path);
-    assert(match != null, 'No route found for: $path');
-    final (route, params) = match!;
-    return _showDialog<T>(
-        child: route.builder(params, uri.queryParameters), config: config);
-  }
-
-  /// Imperatively shows an arbitrary [child] widget as a dialog, returning a [Future].
-  Future<T?> pushDialogWidget<T>(
-    Widget child, {
-    DialogConfig config = const DialogConfig(),
-  }) {
-    return _showDialog<T>(child: child, config: config);
-  }
-
-  Future<T?> _showDialog<T>({
-    required Widget child,
-    required DialogConfig config,
-  }) {
-    final context = navigatorKey.currentContext!;
-    return showAdaptiveDialog<T>(
-      context: context,
-      barrierDismissible: config.barrierDismissible,
-      barrierColor: config.barrierColor,
-      barrierLabel: config.barrierLabel,
-      anchorPoint: config.anchorPoint,
-      requestFocus: config.requestFocus,
-      traversalEdgeBehavior: config.traversalEdgeBehavior,
-      builder: (_) => child,
-    );
+  /// Called by [_NavRouterDelegate] via [onDidRemovePage] to sync the declarative
+  /// stack after the Navigator removes a page (back gesture, system back button).
+  /// Must NOT call [pop] to avoid recursion.
+  void _syncStack() {
+    if (_stack.length > 1) {
+      final removed = _stack.removeLast();
+      if (removed.completer != null && !removed.completer!.isCompleted) {
+        removed.completer!.complete(null);
+      }
+      notifyListeners();
+    }
   }
 
   /// Pops entries until [path] is at the top of the stack.
@@ -339,10 +214,16 @@ class NavController extends ChangeNotifier {
   /// When [inclusive] is `true`, the entry matching [path] is also removed.
   void popUntil(String path, {bool inclusive = false}) {
     while (canPop && _stack.last.path != path) {
-      _stack.removeLast();
+      final removed = _stack.removeLast();
+      if (removed.completer != null && !removed.completer!.isCompleted) {
+        removed.completer!.complete(null);
+      }
     }
     if (inclusive && canPop && _stack.last.path == path) {
-      _stack.removeLast();
+      final removed = _stack.removeLast();
+      if (removed.completer != null && !removed.completer!.isCompleted) {
+        removed.completer!.complete(null);
+      }
     }
     notifyListeners();
   }
@@ -353,20 +234,18 @@ class NavController extends ChangeNotifier {
   void popUntilWhere(bool Function(String path) predicate,
       {bool inclusive = false}) {
     while (canPop && !predicate(_stack.last.path)) {
-      _stack.removeLast();
+      final removed = _stack.removeLast();
+      if (removed.completer != null && !removed.completer!.isCompleted) {
+        removed.completer!.complete(null);
+      }
     }
     if (inclusive && canPop && predicate(_stack.last.path)) {
-      _stack.removeLast();
+      final removed = _stack.removeLast();
+      if (removed.completer != null && !removed.completer!.isCompleted) {
+        removed.completer!.complete(null);
+      }
     }
     notifyListeners();
-  }
-
-  (NavRoute, Map<String, String>)? _matchPath(String path) {
-    for (final route in routes) {
-      final params = _extractParams(route.path, path);
-      if (params != null) return (route, params);
-    }
-    return null;
   }
 
   static Map<String, String>? _extractParams(String pattern, String path) {
