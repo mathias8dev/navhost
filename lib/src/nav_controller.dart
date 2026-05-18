@@ -71,7 +71,7 @@ class NavController extends ChangeNotifier {
   String get currentPath => _stack.last.path;
 
   /// Whether there is more than one entry on the stack.
-  bool get canPop => navigator?.canPop() ?? _stack.length > 1;
+  bool get canPop => _stack.length > 1;
 
   /// A [NavBackStackEntry] for the current (topmost) route.
   NavBackStackEntry get currentEntry => _toEntry(_stack.last);
@@ -139,7 +139,13 @@ class NavController extends ChangeNotifier {
     final completer = Completer<T?>();
     final entry = _parseEntry(resolved, completer: completer);
 
-    if (launchSingleTop && currentPath == entry.path) return Future.value(null);
+    if (launchSingleTop && currentPath == entry.path) {
+      final existing = _stack.last.completer;
+      if (existing != null && !existing.isCompleted) {
+        return existing.future.then((v) => v as T?);
+      }
+      return Future.value(null);
+    }
 
     if (replace) {
       for (final e in _stack) {
