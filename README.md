@@ -11,6 +11,7 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
 - [Usage](#usage)
   - [Basic setup](#basic-setup)
   - [Navigation](#navigation)
+  - [Awaiting results](#awaiting-results)
   - [Query parameters](#query-parameters)
   - [Transitions](#transitions)
   - [Interceptors](#interceptors)
@@ -52,7 +53,8 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
 - **Navigation interceptors** — redirect or block navigation before the stack changes (auth guards, onboarding flows)
 - **`launchSingleTop`** — avoid duplicate entries at the top of the stack
 - **`popUpTo` / `popUpToInclusive`** — pop the stack to a target before pushing
-- **Bottom sheets & dialogs** — declarative (stack-managed) and imperative (returns a result)
+- **Async results** — every navigation method returns `Future<T?>` that resolves when the route is popped; `pop(result)` forwards a typed value to the caller
+- **Bottom sheets & dialogs** — declarative (`showXXX`, stack-managed, interceptors apply) and imperative (`pushXXX`, bypasses stack)
 - **Inline widget navigation** — push arbitrary widgets without defining a route
 - **Back stack observation** — `currentEntry`, `previousEntry`, `backStack` with path and params
 - **Nested NavHosts** — sub-routing with independent back stacks (tab navigation)
@@ -121,6 +123,61 @@ nav.pop();
 nav.popUntil('/home');
 nav.popUntil('/home', inclusive: true);
 ```
+
+### Awaiting results
+
+Every navigation method returns `Future<T?>`. The future resolves when the destination is popped. Pass a typed value to `pop()` to forward it to the caller.
+
+```dart
+// Declarative — any navigation method
+final confirmed = await nav.navigate<bool>('/confirm');
+if (confirmed == true) deleteItem();
+
+// Declarative bottom sheet
+final selected = await nav.showBottomSheet<String>('/color-picker');
+
+// Declarative dialog
+final accepted = await nav.showDialog<bool>('/terms');
+
+// Pop with a result from inside the destination
+nav.pop(true);
+nav.pop('selected_value');
+nav.pop(); // resolves with null
+```
+
+When a route is removed without an explicit result — by `switchTo`, `popUntil`, or the back button — its future completes with `null`.
+
+If `launchSingleTop` skips navigation because the destination is already on top, the future of the existing entry is returned instead of an immediate `null`, so the caller still receives the result when that route is eventually popped:
+
+```dart
+// Both futures resolve together when /detail is eventually popped
+final f1 = nav.navigate<String>('/detail');
+final f2 = nav.navigate<String>('/detail', launchSingleTop: true); // skipped — returns f1's future
+```
+
+**Imperative variants** bypass the declarative stack and go directly through the Flutter Navigator. Use them for one-off interactions where you don't need back-stack tracking:
+
+```dart
+// Full-screen route by path or widget
+final result = await nav.push<String>('/detail');
+final result = await nav.pushWidget<String>(MyWidget());
+
+// Bottom sheet
+final pick = await nav.pushBottomSheet<Color>('/color-picker');
+final pick = await nav.pushBottomSheetWidget<Color>(ColorPickerWidget());
+
+// Dialog
+final ok = await nav.pushDialog<bool>('/confirm');
+final ok = await nav.pushDialogWidget<bool>(ConfirmDialog());
+```
+
+| | `navigate` / `showXXX` | `push` / `pushXXX` |
+|---|---|---|
+| Back stack | ✅ tracked | ❌ bypassed |
+| `backStack` / `currentPath` | ✅ updated | ❌ unchanged |
+| Interceptors | ✅ applied | ❌ bypassed |
+| `popUntil` / `switchTo` | ✅ affected | ❌ not affected |
+| Result via `pop(value)` | ✅ | ✅ |
 
 ### Query parameters
 
@@ -214,56 +271,45 @@ Return `null` to allow, a different path to redirect, or `from` to block.
 
 ### Bottom sheets & dialogs
 
-Declarative (managed by the back stack):
+**Declarative** (`showXXX`) — the sheet or dialog is part of the back stack. Interceptors apply. The returned `Future<T?>` resolves when it is popped.
 
 ```dart
-// Auto-height — sheet sizes to its content (default)
-nav.showBottomSheet('/item/1', config: const BottomSheetConfig(
-  showDragHandle: true,
-));
-
-// Fixed height — occupy 85% of screen height
-nav.showBottomSheet('/item/1', config: const BottomSheetConfig(
-  heightFactor: 0.85,
-  showDragHandle: true,
-));
-
-nav.showDialog('/confirm');
-```
-
-Imperative without a route — pass a widget directly:
-
-```dart
-// Auto-height (default)
-nav.showBottomSheetWidget(
-  MyPickerWidget(
-    onSelected: (value) {
-      doSomething(value);
-      nav.pop();
-    },
-  ),
+// Route-based — interceptors apply, entry appears in backStack
+final result = await nav.showBottomSheet<String>('/color-picker',
+  config: const BottomSheetConfig(showDragHandle: true),
 );
 
-// Fixed height
-nav.showBottomSheetWidget(
-  MyPickerWidget(...),
+final accepted = await nav.showDialog<bool>('/terms');
+
+// Widget-based — no route resolution, no interceptors, still in backStack
+final result = await nav.showBottomSheetWidget<String>(
+  ColorPickerWidget(),
   config: const BottomSheetConfig(heightFactor: 0.5),
 );
+
+final accepted = await nav.showDialogWidget<bool>(ConfirmDialog());
 ```
 
-Imperative (returns a result):
+**Imperative** (`pushXXX`) — bypasses the back stack entirely. Use for one-off modals where navigation state doesn't matter.
 
 ```dart
-final result = await nav.pushDialogWidget<bool>(
+// Route-based
+final pick   = await nav.pushBottomSheet<Color>('/color-picker');
+final ok     = await nav.pushDialog<bool>('/confirm');
+
+// Widget-based
+final pick   = await nav.pushBottomSheetWidget<Color>(ColorPickerWidget());
+final ok     = await nav.pushDialogWidget<bool>(
   AlertDialog(
-    title: const Text('Confirm'),
     actions: [
       TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
-      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Yes')),
+      TextButton(onPressed: () => Navigator.pop(context, true),  child: const Text('Yes')),
     ],
   ),
 );
 ```
+
+Pop with a result from inside the modal using `nav.pop(value)` or `Navigator.of(context).pop(value)` — both work.
 
 ### Nested NavHost (tab navigation)
 

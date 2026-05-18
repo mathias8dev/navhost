@@ -15,8 +15,7 @@ class _NavHostScope extends InheritedWidget {
   bool updateShouldNotify(_NavHostScope old) => false;
 
   static _NavHostState? _maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_NavHostScope>()
-          ?._state;
+      context.dependOnInheritedWidgetOfExactType<_NavHostScope>()?._state;
 }
 
 /// A widget that renders the current navigation stack managed by a [NavController].

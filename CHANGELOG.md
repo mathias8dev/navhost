@@ -1,3 +1,7 @@
+## 0.2.1
+
+- Apply interceptors to `showBottomSheet()` and `showDialog()` — a blocked or redirected path now affects declarative modals consistently with `navigate()`.
+
 ## 0.2.0
 
 ### Async results

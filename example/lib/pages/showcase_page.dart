@@ -44,8 +44,9 @@ class ShowcasePage extends StatelessWidget {
                     showDragHandle: true,
                     useSafeArea: true,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
                   ),
                 ),
@@ -69,9 +70,7 @@ class ShowcasePage extends StatelessWidget {
               _ActionTile(
                 icon: Icons.chat_bubble_outline,
                 title: 'showDialogWidget(…)',
-                onTap: () => nav.showDialogWidget(
-                  _buildSampleDialog(context),
-                ),
+                onTap: () => nav.showDialogWidget(_buildSampleDialog(context)),
               ),
               const SizedBox(height: 24),
               _SectionTitle('Imperative (returns result)'),
@@ -131,8 +130,7 @@ class ShowcasePage extends StatelessWidget {
                 icon: Icons.filter_1,
                 title: 'launchSingleTop: true',
                 subtitle: 'Tap twice — second is a no-op',
-                onTap: () => nav.navigate('/item/1',
-                    launchSingleTop: true),
+                onTap: () => nav.navigate('/item/1', launchSingleTop: true),
               ),
               _ActionTile(
                 icon: Icons.low_priority,
@@ -141,8 +139,11 @@ class ShowcasePage extends StatelessWidget {
                 onTap: () {
                   nav.navigate('/item/1');
                   nav.navigate('/item/2');
-                  nav.navigate('/item/3',
-                      popUpTo: '/', popUpToInclusive: false);
+                  nav.navigate(
+                    '/item/3',
+                    popUpTo: '/',
+                    popUpToInclusive: false,
+                  );
                 },
               ),
               _ActionTile(
@@ -152,8 +153,7 @@ class ShowcasePage extends StatelessWidget {
                 onTap: () {
                   nav.navigate('/item/1');
                   nav.navigate('/item/2');
-                  nav.navigate('/item/3',
-                      popUpTo: '/', popUpToInclusive: true);
+                  nav.navigate('/item/3', popUpTo: '/', popUpToInclusive: true);
                 },
               ),
               _ActionTile(
@@ -186,9 +186,9 @@ class ShowcasePage extends StatelessWidget {
   }
 
   void _showResult(BuildContext context, Object? result) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Result: $result')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Result: $result')));
   }
 
   Widget _buildSampleDialog(BuildContext context) {
@@ -288,9 +288,13 @@ class _BackStackCardState extends State<_BackStackCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Back Stack (${stack.length})',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: colors.primary)),
+            Text(
+              'Back Stack (${stack.length})',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: colors.primary,
+              ),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -336,8 +340,8 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -399,8 +403,7 @@ class _SampleContent extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child:
-            Text(label, style: Theme.of(context).textTheme.headlineSmall),
+        child: Text(label, style: Theme.of(context).textTheme.headlineSmall),
       ),
     );
   }

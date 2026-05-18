@@ -16,9 +16,11 @@ extension NavControllerOverlays on NavController {
   /// Presents a route identified by [path] as a modal bottom sheet.
   Future<T?> showBottomSheet<T extends Object?>(String path,
       {BottomSheetConfig config = const BottomSheetConfig()}) {
+    final resolved = _applyInterceptors(path);
+    if (resolved == null) return Future.value(null);
     final completer = Completer<T?>();
     _stack.add(NavController._parseEntry(
-      path,
+      resolved,
       presentation: RoutePresentation.bottomSheet,
       bottomSheetConfig: config,
       completer: completer,
@@ -45,9 +47,11 @@ extension NavControllerOverlays on NavController {
   /// Presents a route identified by [path] as a dialog.
   Future<T?> showDialog<T extends Object?>(String path,
       {DialogConfig config = const DialogConfig()}) {
+    final resolved = _applyInterceptors(path);
+    if (resolved == null) return Future.value(null);
     final completer = Completer<T?>();
     _stack.add(NavController._parseEntry(
-      path,
+      resolved,
       presentation: RoutePresentation.dialog,
       dialogConfig: config,
       completer: completer,

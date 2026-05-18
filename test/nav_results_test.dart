@@ -105,8 +105,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final future =
-          nav.showBottomSheetWidget<int>(const Text('Sheet Widget'));
+      final future = nav.showBottomSheetWidget<int>(const Text('Sheet Widget'));
       await tester.pumpAndSettle();
 
       nav.pop(99);
@@ -428,9 +427,9 @@ void main() {
         AlertDialog(
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(
-                      tester.element(find.byType(AlertDialog)))
-                  .pop(true),
+              onPressed: () =>
+                  Navigator.of(tester.element(find.byType(AlertDialog)))
+                      .pop(true),
               child: const Text('OK'),
             ),
           ],
