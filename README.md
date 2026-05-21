@@ -444,6 +444,8 @@ nav.navigate(AppRoutes.buildPath(
 
 Both eliminate raw string interpolation at call sites — the choice is a style preference: page-owned (`DetailPage.path`) favours cohesion, centralized (`AppRoutes.buildPath`) favours separation.
 
+For a complete typed-destination solution — where each destination is a Dart object that carries its own params, computes its URL, and declares its result type — see [navhost_typed](https://pub.dev/packages/navhost_typed). It builds on these same patterns and keeps full compatibility with all navhost features (interceptors, `popUpTo`, async results, nested NavHosts).
+
 ### IDs in URLs, objects through constructors
 
 Route paths should carry only stable, minimal identifiers — not serialized state. The full object is fetched or passed via the ViewModel.

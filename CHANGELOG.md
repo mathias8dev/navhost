@@ -1,3 +1,7 @@
+## 0.2.2
+
+- README: add [navhost_typed](https://pub.dev/packages/navhost_typed) reference at the end of the "Typed path builders" section — points to the companion package for a complete typed-destination solution.
+
 ## 0.2.1
 
 - Apply interceptors to `showBottomSheet()` and `showDialog()` — a blocked or redirected path now affects declarative modals consistently with `navigate()`.
