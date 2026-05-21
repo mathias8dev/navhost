@@ -661,7 +661,7 @@ void main() {
       nav.navigate('/b');
       nav.navigate('/c');
       nav.navigate('/a', popUpTo: '/a', launchSingleTop: true);
-      expect(nav.backStack.map((e) => e.path).toList(), ['/', '/a', '/a']);
+      expect(nav.backStack.map((e) => e.path).toList(), ['/', '/a']);
     });
 
     test('multiple pops at root are no-ops', () {

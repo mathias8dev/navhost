@@ -1,3 +1,7 @@
+## 0.2.3
+
+- Fix `launchSingleTop` + `popUpTo` interaction: the `launchSingleTop` check now runs after `popUpTo` has trimmed the stack, so navigating to a destination that `popUpTo` already brought to the top no longer pushes a duplicate entry.
+
 ## 0.2.2
 
 - README: add [navhost_typed](https://pub.dev/packages/navhost_typed) reference at the end of the "Typed path builders" section — points to the companion package for a complete typed-destination solution.

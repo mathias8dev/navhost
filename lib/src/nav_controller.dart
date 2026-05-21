@@ -139,14 +139,6 @@ class NavController extends ChangeNotifier {
     final completer = Completer<T?>();
     final entry = _parseEntry(resolved, completer: completer);
 
-    if (launchSingleTop && currentPath == entry.path) {
-      final existing = _stack.last.completer;
-      if (existing != null && !existing.isCompleted) {
-        return existing.future.then((v) => v as T?);
-      }
-      return Future.value(null);
-    }
-
     if (replace) {
       for (final e in _stack) {
         if (e.completer != null && !e.completer!.isCompleted) {
@@ -172,6 +164,13 @@ class NavController extends ChangeNotifier {
             removed.completer!.complete(null);
           }
         }
+      }
+      if (launchSingleTop && currentPath == entry.path) {
+        final existing = _stack.last.completer;
+        if (existing != null && !existing.isCompleted) {
+          return existing.future.then((v) => v as T?);
+        }
+        return Future.value(null);
       }
       _stack.add(entry);
     }
