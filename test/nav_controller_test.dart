@@ -627,6 +627,14 @@ void main() {
       expect(nav.currentPath, '/a');
     });
 
+    test('popUpToInclusive on root with launchSingleTop then pushes', () {
+      final nav = _createController();
+      nav.navigate('/a',
+          popUpTo: '/', popUpToInclusive: true, launchSingleTop: true);
+      expect(nav.backStack.length, 1);
+      expect(nav.currentPath, '/a');
+    });
+
     test('popUntilWhere with never-matching predicate pops to root', () {
       final nav = _createController();
       nav.navigate('/a');

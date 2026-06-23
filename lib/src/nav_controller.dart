@@ -165,7 +165,9 @@ class NavController extends ChangeNotifier {
           }
         }
       }
-      if (launchSingleTop && _stack.last.hasSameLocationAs(entry)) {
+      if (launchSingleTop &&
+          _stack.isNotEmpty &&
+          _stack.last.hasSameLocationAs(entry)) {
         final existing = _stack.last.completer;
         if (existing != null && !existing.isCompleted) {
           return existing.future.then((v) => v as T?);

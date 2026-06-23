@@ -1,3 +1,7 @@
+## 0.2.5
+
+- Fix `navigate()` with `popUpToInclusive` and `launchSingleTop` when the pop operation empties the stack before pushing the next entry.
+
 ## 0.2.4
 
 - Fix `launchSingleTop` to compare the full destination location, including query parameters, instead of only the path.
