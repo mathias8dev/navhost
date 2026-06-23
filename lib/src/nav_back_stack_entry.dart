@@ -13,6 +13,12 @@ class NavBackStackEntry {
   /// Query parameters from the URL (e.g. `?ref=email` yields `{ref: "email"}`).
   final Map<String, String> queryParams;
 
+  /// The full URL location for this entry, including query parameters.
+  String get location => Uri(
+        path: path,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      ).toString();
+
   /// Creates a back stack entry for the given [path] and optional [params] and [queryParams].
   const NavBackStackEntry({
     required this.path,

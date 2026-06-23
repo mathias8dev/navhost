@@ -1,3 +1,9 @@
+## 0.2.4
+
+- Fix `launchSingleTop` to compare the full destination location, including query parameters, instead of only the path.
+- Add `NavBackStackEntry.location` for a canonical path + query string representation.
+- Include query parameters in generated page keys so replacing a stack entry with the same path but different query parameters rebuilds the rendered page correctly.
+
 ## 0.2.3
 
 - Fix `launchSingleTop` + `popUpTo` interaction: the `launchSingleTop` check now runs after `popUpTo` has trimmed the stack, so navigating to a destination that `popUpTo` already brought to the top no longer pushes a duplicate entry.

@@ -100,6 +100,24 @@ void main() {
       expect(find.text('B'), findsOneWidget);
     });
 
+    testWidgets('switchTo rebuilds content when only query params change',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => Text(q['tab'] ?? 'home')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      expect(find.text('home'), findsOneWidget);
+
+      nav.switchTo('/?tab=favorites');
+      await tester.pumpAndSettle();
+      expect(find.text('favorites'), findsOneWidget);
+    });
+
     testWidgets('NavController.of returns controller', (tester) async {
       late NavController found;
       final nav = NavController(

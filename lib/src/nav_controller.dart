@@ -123,7 +123,7 @@ class NavController extends ChangeNotifier {
   ///
   /// When [replace] is `true` the entire stack is replaced with [path].
   /// When [launchSingleTop] is `true` and [path] is already the current
-  /// route, navigation is skipped.
+  /// location, including query parameters, navigation is skipped.
   /// [popUpTo] pops routes until the given path is reached before pushing;
   /// set [popUpToInclusive] to also remove the target itself.
   Future<T?> navigate<T extends Object?>(
@@ -165,7 +165,7 @@ class NavController extends ChangeNotifier {
           }
         }
       }
-      if (launchSingleTop && currentPath == entry.path) {
+      if (launchSingleTop && _stack.last.hasSameLocationAs(entry)) {
         final existing = _stack.last.completer;
         if (existing != null && !existing.isCompleted) {
           return existing.future.then((v) => v as T?);

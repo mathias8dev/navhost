@@ -30,6 +30,21 @@ class _RouteEntry {
     this.inlineChild,
     this.completer,
   });
+
+  String get location => Uri(
+        path: path,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      ).toString();
+
+  bool hasSameLocationAs(_RouteEntry other) {
+    if (path != other.path || queryParams.length != other.queryParams.length) {
+      return false;
+    }
+    for (final entry in queryParams.entries) {
+      if (other.queryParams[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
 }
 
 List<Page> _buildPages(
@@ -45,7 +60,7 @@ List<Page> _buildPages(
 
   for (var i = 0; i < controller._stack.length; i++) {
     final entry = controller._stack[i];
-    final key = ValueKey('$i-${entry.path}');
+    final key = ValueKey('$i-${entry.location}');
 
     Widget? child;
     NavRoute? route;

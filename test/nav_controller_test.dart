@@ -59,6 +59,12 @@ void main() {
       expect(nav.backStack.first.path, '/');
     });
 
+    test('backStack entry exposes full location', () {
+      final nav = _createController();
+      nav.navigate('/a?tab=favorites');
+      expect(nav.currentEntry.location, '/a?tab=favorites');
+    });
+
     test('previousEntry is null at root', () {
       final nav = _createController();
       expect(nav.previousEntry, isNull);
@@ -210,6 +216,35 @@ void main() {
       var count = 0;
       nav.addListener(() => count++);
       nav.navigate('/a', launchSingleTop: true);
+      expect(count, 0);
+      expect(nav.backStack.length, 2);
+    });
+
+    test('skips if already at destination with same query params', () {
+      final nav = _createController();
+      nav.navigate('/a?tab=favorites');
+      var count = 0;
+      nav.addListener(() => count++);
+      nav.navigate('/a?tab=favorites', launchSingleTop: true);
+      expect(count, 0);
+      expect(nav.backStack.length, 2);
+    });
+
+    test('navigates if query params differ', () {
+      final nav = _createController();
+      nav.navigate('/a');
+      nav.navigate('/a?tab=favorites', launchSingleTop: true);
+      expect(nav.currentPath, '/a');
+      expect(nav.currentEntry.queryParams, {'tab': 'favorites'});
+      expect(nav.backStack.length, 3);
+    });
+
+    test('skips if same query params are passed in different order', () {
+      final nav = _createController();
+      nav.navigate('/a?tab=favorites&filter=recent');
+      var count = 0;
+      nav.addListener(() => count++);
+      nav.navigate('/a?filter=recent&tab=favorites', launchSingleTop: true);
       expect(count, 0);
       expect(nav.backStack.length, 2);
     });
@@ -369,14 +404,14 @@ void main() {
       expect(entries[3].queryParams, {'z': '3'});
     });
 
-    test('launchSingleTop compares path without query params', () {
+    test('launchSingleTop compares query params', () {
       final nav = _createController();
       nav.navigate('/a?x=1');
       var count = 0;
       nav.addListener(() => count++);
       nav.navigate('/a?x=2', launchSingleTop: true);
-      expect(count, 0);
-      expect(nav.currentEntry.queryParams, {'x': '1'});
+      expect(count, 1);
+      expect(nav.currentEntry.queryParams, {'x': '2'});
     });
   });
 
