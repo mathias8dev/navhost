@@ -70,6 +70,26 @@ void main() {
       expect(find.text('Item 42'), findsOneWidget);
     });
 
+    testWidgets('renders the most specific matching route', (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/users/:id', (p, q) => Text('User ${p['id']}')),
+          NavRoute('/users/settings', (p, q) => const Text('Settings')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+
+      nav.navigate('/users/settings');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('User settings'), findsNothing);
+    });
+
     testWidgets('renders inline widget', (tester) async {
       final nav = NavController(
         initialRoute: '/',

@@ -278,16 +278,22 @@ class NavController extends ChangeNotifier {
     final patternSegments = Uri.parse(pattern).pathSegments;
     final pathSegments = Uri.parse(path).pathSegments;
 
-    if (patternSegments.length != pathSegments.length) return null;
-
     final params = <String, String>{};
     for (var i = 0; i < patternSegments.length; i++) {
-      if (patternSegments[i].startsWith(':')) {
-        params[patternSegments[i].substring(1)] = pathSegments[i];
-      } else if (patternSegments[i] != pathSegments[i]) {
+      final patternSegment = patternSegments[i];
+      if (patternSegment == '*') {
+        if (i != patternSegments.length - 1) return null;
+        params['*'] = pathSegments.skip(i).join('/');
+        return params;
+      }
+      if (i >= pathSegments.length) return null;
+      if (patternSegment.startsWith(':')) {
+        params[patternSegment.substring(1)] = pathSegments[i];
+      } else if (patternSegment != pathSegments[i]) {
         return null;
       }
     }
+    if (patternSegments.length != pathSegments.length) return null;
     return params;
   }
 

@@ -354,6 +354,66 @@ void main() {
       final nav = _createController();
       expect(nav.currentEntry.params, isEmpty);
     });
+
+    test('static route beats dynamic route regardless registration order', () {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => _page('Home')),
+          NavRoute('/users/:id', (p, q) => _page('User')),
+          NavRoute('/users/settings', (p, q) => _page('Settings')),
+        ],
+      );
+
+      nav.navigate('/users/settings');
+
+      expect(nav.currentEntry.path, '/users/settings');
+      expect(nav.currentEntry.params, isEmpty);
+    });
+
+    test('dynamic route beats splat route regardless registration order', () {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => _page('Home')),
+          NavRoute('/files/*', (p, q) => _page('Files')),
+          NavRoute('/files/:id', (p, q) => _page('File')),
+        ],
+      );
+
+      nav.navigate('/files/readme');
+
+      expect(nav.currentEntry.params, {'id': 'readme'});
+    });
+
+    test('splat route captures remaining path segments', () {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => _page('Home')),
+          NavRoute('/files/*', (p, q) => _page('Files')),
+        ],
+      );
+
+      nav.navigate('/files/docs/getting-started');
+
+      expect(nav.currentEntry.params, {'*': 'docs/getting-started'});
+    });
+
+    test('registration order breaks equal specificity ties', () {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => _page('Home')),
+          NavRoute('/teams/:teamId', (p, q) => _page('Team')),
+          NavRoute('/teams/:slug', (p, q) => _page('Team slug')),
+        ],
+      );
+
+      nav.navigate('/teams/suza');
+
+      expect(nav.currentEntry.params, {'teamId': 'suza'});
+    });
   });
 
   group('Query params', () {

@@ -12,7 +12,8 @@ typedef NavTransitionBuilder = Widget Function(
 /// Defines a navigable route with an optional custom transition.
 ///
 /// Routes are matched by [path], which may contain dynamic segments
-/// prefixed with `:` (e.g. `/user/:id`).
+/// prefixed with `:` (e.g. `/user/:id`) or a trailing `*` splat segment
+/// (e.g. `/files/*`).
 ///
 /// ```dart
 /// NavRoute('/profile/:id', (params, _) => ProfilePage(id: params['id']!));
