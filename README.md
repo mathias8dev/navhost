@@ -13,6 +13,7 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
   - [Navigation](#navigation)
   - [Awaiting results](#awaiting-results)
   - [Query parameters](#query-parameters)
+  - [Route matching and not found](#route-matching-and-not-found)
   - [Transitions](#transitions)
   - [Interceptors](#interceptors)
   - [Bottom sheets & dialogs](#bottom-sheets--dialogs)
@@ -48,7 +49,9 @@ A Compose-inspired declarative navigation wrapper for Flutter's Navigator 2.0.
 ## Features
 
 - **Declarative navigation** — `navigate()`, `pop()`, `popUntil()`, `switchTo()` manage a back stack that drives `Navigator.pages`
-- **Path parameters** — `/user/:uid/post/:pid` extracts `{uid: "42", pid: "7"}`
+- **Ranked path matching** — static routes beat dynamic routes, dynamic routes beat trailing splats, and declaration order breaks ties
+- **Path parameters & splats** — `/user/:uid/post/:pid` extracts `{uid: "42", pid: "7"}` and `/files/*` captures the remaining path in `params['*']`
+- **Not-found handling** — unmatched paths render a default not-found page or a custom `notFoundBuilder`
 - **Compose-style transitions** — `enterTransition`, `exitTransition`, `popEnterTransition`, `popExitTransition` per route or as NavHost defaults
 - **Navigation interceptors** — redirect or block navigation before the stack changes (auth guards, onboarding flows)
 - **`launchSingleTop`** — avoid duplicate entries at the top of the stack
@@ -89,6 +92,9 @@ class _MyAppState extends State<MyApp> {
       NavRoute('/', (_, _) => const HomePage()),
       NavRoute('/item/:id', (params, _) => DetailPage(id: params['id']!)),
     ],
+    notFoundBuilder: (path, queryParams) => Center(
+      child: Text('Route not found: $path'),
+    ),
   );
 
   @override
@@ -195,6 +201,41 @@ nav.currentEntry.queryParams; // {ref: "email", page: "2"}
 ```
 
 Path parameters and query parameters are kept separate — no naming conflicts.
+
+### Route matching and not found
+
+`navhost` ranks every matching route and chooses the most specific match:
+
+1. Static segments beat dynamic segments.
+2. Dynamic segments beat trailing splats.
+3. Longer, more specific routes beat shorter routes.
+4. Declaration order only breaks ties.
+
+```dart
+final nav = NavController(
+  routes: [
+    NavRoute('/users/:id', (params, _) => UserPage(id: params['id']!)),
+    NavRoute('/users/settings', (_, _) => const UserSettingsPage()),
+    NavRoute('/files/*', (params, _) => FilesPage(path: params['*'] ?? '')),
+  ],
+);
+
+nav.navigate('/users/settings'); // Matches /users/settings, not /users/:id
+nav.navigate('/files/docs/intro'); // params['*'] == 'docs/intro'
+```
+
+If no route matches, `NavHost` renders a default not-found page. Provide `notFoundBuilder` to customize that screen:
+
+```dart
+final nav = NavController(
+  routes: [
+    NavRoute('/', (_, _) => const HomePage()),
+  ],
+  notFoundBuilder: (path, queryParams) => Center(
+    child: Text('Route not found: $path'),
+  ),
+);
+```
 
 ### Transitions
 
