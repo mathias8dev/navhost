@@ -112,6 +112,56 @@ void main() {
     });
   });
 
+  group('route information', () {
+    test('external route path replaces stack without seeding initial route',
+        () async {
+      final nav = NavController(
+        initialRoute: '/splash',
+        routes: [
+          NavRoute('/splash', (p, q) => _page('Splash')),
+          NavRoute('/home', (p, q) => _page('Home')),
+        ],
+      );
+
+      await (nav.delegate as RouterDelegate<String>).setNewRoutePath('/home');
+
+      expect(nav.currentPath, '/home');
+      expect(nav.canPop, false);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+    });
+
+    test('external unknown route path replaces stack with default not found',
+        () async {
+      final nav = _createController();
+      nav.navigate('/a');
+
+      await (nav.delegate as RouterDelegate<String>)
+          .setNewRoutePath('/missing');
+
+      expect(nav.currentPath, '/missing');
+      expect(nav.canPop, false);
+      expect(nav.currentEntry.params, isEmpty);
+      expect(nav.backStack.map((entry) => entry.path), ['/missing']);
+    });
+
+    test('external unknown route path uses notFoundBuilder when configured',
+        () async {
+      final nav = NavController(
+        initialRoute: '/',
+        notFoundBuilder: (path, queryParams) => _page('Not found'),
+        routes: [NavRoute('/', (p, q) => _page('Home'))],
+      );
+
+      await (nav.delegate as RouterDelegate<String>)
+          .setNewRoutePath('/missing');
+
+      expect(nav.currentPath, '/missing');
+      expect(nav.canPop, false);
+      expect(nav.currentEntry.params, isEmpty);
+      expect(nav.backStack.map((entry) => entry.path), ['/missing']);
+    });
+  });
+
   group('switchTo', () {
     test('replaces entire stack', () {
       final nav = _createController();
@@ -612,12 +662,29 @@ void main() {
       expect(nav.backStack.map((e) => e.path).toList(), ['/', '/a', '/a']);
     });
 
-    test('navigate to unmatched route adds to stack but skips in pages', () {
+    test('navigate to unmatched route uses default not found', () {
       final nav = _createController();
       nav.navigate('/nonexistent');
       expect(nav.currentPath, '/nonexistent');
-      expect(nav.backStack.length, 2);
-      expect(nav.currentEntry.params, isEmpty);
+      expect(nav.backStack.map((e) => e.path).toList(), [
+        '/',
+        '/nonexistent',
+      ]);
+    });
+
+    test('unmatched route stays in multi-route stack', () {
+      final nav = _createController();
+      nav.navigate('/a');
+      nav.navigate('/nonexistent');
+      nav.navigate('/b');
+
+      expect(nav.currentPath, '/b');
+      expect(nav.backStack.map((e) => e.path).toList(), [
+        '/',
+        '/a',
+        '/nonexistent',
+        '/b',
+      ]);
     });
 
     test('popUpToInclusive on root then pushes — stack never empty', () {
@@ -723,8 +790,8 @@ void main() {
       nav.navigate('/a');
       nav.navigate('/b');
       nav.navigate('/c');
-      nav.navigate('/new', popUpTo: '/a', popUpToInclusive: true);
-      expect(nav.backStack.map((e) => e.path).toList(), ['/', '/new']);
+      nav.navigate('/b', popUpTo: '/a', popUpToInclusive: true);
+      expect(nav.backStack.map((e) => e.path).toList(), ['/', '/b']);
     });
 
     test('currentEntry params after interceptor redirect', () {

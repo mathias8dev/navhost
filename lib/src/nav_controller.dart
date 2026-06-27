@@ -21,6 +21,12 @@ part 'nav_route_matcher.dart';
 part 'nav_router_delegate.dart';
 part 'nav_host.dart';
 
+/// Builds the page displayed when a requested path does not match any route.
+typedef NavNotFoundBuilder = Widget Function(
+  String path,
+  Map<String, String> queryParams,
+);
+
 /// Central navigation controller that manages the back stack and route resolution.
 ///
 /// Create a [NavController] with a list of [NavRoute]s, then pass it to a
@@ -46,6 +52,13 @@ class NavController extends ChangeNotifier {
 
   /// Interceptors evaluated before each navigation request.
   final List<NavInterceptor> interceptors;
+
+  /// Builds entries that do not match [routes].
+  ///
+  /// The current path remains the originally requested path. If this is `null`,
+  /// navhost renders a default not-found page for unmatched entries.
+  final NavNotFoundBuilder? notFoundBuilder;
+
   final List<_RouteEntry> _stack;
 
   /// Global key used to access the underlying [NavigatorState].
@@ -56,6 +69,7 @@ class NavController extends ChangeNotifier {
     required this.routes,
     this.initialRoute = '/',
     this.interceptors = const [],
+    this.notFoundBuilder,
   }) : _stack = [_parseEntry(initialRoute)];
 
   /// Router delegate for use with [Router] widget.
@@ -190,17 +204,22 @@ class NavController extends ChangeNotifier {
   /// Always delegates to the Navigator — works for both declarative and imperative routes.
   /// An optional [result] is forwarded to the awaiting [push] caller.
   void pop<T extends Object?>([T? result]) {
-    if (navigator != null) {
+    if (navigator != null && navigator!.canPop()) {
       navigator!.pop<T>(result);
-    } else {
-      if (canPop) {
-        final removed = _stack.removeLast();
-        if (removed.completer != null && !removed.completer!.isCompleted) {
-          removed.completer!.complete(result);
-        }
-        notifyListeners();
-      }
+      return;
     }
+    if (!canPop) {
+      final completer = _stack.last.completer;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete(result);
+      }
+      return;
+    }
+    final removed = _stack.removeLast();
+    if (removed.completer != null && !removed.completer!.isCompleted) {
+      removed.completer!.complete(result);
+    }
+    notifyListeners();
   }
 
   /// Called by [_NavRouterDelegate] via [onDidRemovePage] to sync the declarative

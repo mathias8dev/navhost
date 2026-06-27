@@ -69,10 +69,15 @@ List<Page> _buildPages(
       child = entry.inlineChild!;
     } else {
       final match = controller._matchPath(entry.path);
-      if (match == null) continue;
-      final (matchedRoute, params) = match;
-      route = matchedRoute;
-      child = matchedRoute.builder(params, entry.queryParams);
+      if (match == null) {
+        final notFoundBuilder = controller.notFoundBuilder;
+        child = notFoundBuilder?.call(entry.path, entry.queryParams) ??
+            _DefaultNotFoundPage(location: entry.location);
+      } else {
+        final (matchedRoute, params) = match;
+        route = matchedRoute;
+        child = matchedRoute.builder(params, entry.queryParams);
+      }
     }
 
     switch (entry.presentation) {
@@ -121,4 +126,22 @@ List<Page> _buildPages(
   }
 
   return pages;
+}
+
+class _DefaultNotFoundPage extends StatelessWidget {
+  final String location;
+
+  const _DefaultNotFoundPage({required this.location});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: Text(
+        'Route not found: $location',
+        style: textTheme.bodyLarge,
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
 }

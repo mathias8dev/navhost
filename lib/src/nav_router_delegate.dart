@@ -16,12 +16,18 @@ class _NavRouterDelegate extends RouterDelegate<String>
 
   @override
   Future<void> setNewRoutePath(String configuration) async {
-    controller._stack.clear();
     final entry = NavController._parseEntry(configuration);
-    if (entry.path != controller.initialRoute) {
-      controller._stack.add(NavController._parseEntry(controller.initialRoute));
+
+    for (final e in controller._stack) {
+      if (e.completer != null && !e.completer!.isCompleted) {
+        e.completer!.complete(null);
+      }
     }
-    controller._stack.add(entry);
+
+    controller._stack
+      ..clear()
+      ..add(entry);
+    controller._notify();
   }
 
   @override

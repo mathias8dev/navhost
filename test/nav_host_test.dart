@@ -211,7 +211,7 @@ void main() {
       expect(usedRouteTransition, true);
     });
 
-    testWidgets('unmatched route is skipped in rendered pages', (tester) async {
+    testWidgets('unmatched route renders default not found', (tester) async {
       final nav = NavController(
         initialRoute: '/',
         routes: [
@@ -225,7 +225,69 @@ void main() {
 
       nav.navigate('/unknown');
       await tester.pumpAndSettle();
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Route not found: /unknown'), findsOneWidget);
+      expect(nav.backStack.map((entry) => entry.path), ['/', '/unknown']);
+    });
+
+    testWidgets('unmatched route stays visible in a multi-route stack',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/a', (p, q) => const Text('A')),
+          NavRoute('/b', (p, q) => const Text('B')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      nav.navigate('/a');
+      await tester.pumpAndSettle();
+      nav.navigate('/unknown');
+      await tester.pumpAndSettle();
+      nav.navigate('/b');
+      await tester.pumpAndSettle();
+
+      expect(find.text('B'), findsOneWidget);
+      expect(nav.currentPath, '/b');
+      expect(nav.backStack.map((entry) => entry.path), [
+        '/',
+        '/a',
+        '/unknown',
+        '/b',
+      ]);
+
+      nav.pop();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Route not found: /unknown'), findsOneWidget);
+      expect(nav.currentPath, '/unknown');
+    });
+
+    testWidgets('unmatched navigation renders notFoundBuilder when configured',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        notFoundBuilder: (path, queryParams) => Text('Not found: $path'),
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      nav.navigate('/unknown');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Not found: /unknown'), findsOneWidget);
+      expect(nav.currentPath, '/unknown');
+      expect(nav.canPop, true);
     });
   });
 
@@ -542,6 +604,74 @@ void main() {
 
       expect(find.text('Home'), findsOneWidget);
       expect(nav.backStack.length, 1);
+    });
+
+    testWidgets('controller pop at root keeps the rendered page',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      nav.pop();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(nav.backStack.length, 1);
+    });
+
+    testWidgets('external unknown route renders default not found',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      await (nav.delegate as RouterDelegate<String>)
+          .setNewRoutePath('/missing');
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Route not found: /missing'), findsOneWidget);
+      expect(nav.currentPath, '/missing');
+      expect(nav.backStack.length, 1);
+    });
+
+    testWidgets(
+        'external unknown route renders notFoundBuilder when configured',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        notFoundBuilder: (path, queryParams) =>
+            Text('Not found: $path from=${queryParams['from']}'),
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      await (nav.delegate as RouterDelegate<String>)
+          .setNewRoutePath('/missing?from=test');
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Not found: /missing from=test'), findsOneWidget);
+      expect(nav.currentEntry.location, '/missing?from=test');
     });
 
     testWidgets('back pops correct route and resolves future', (tester) async {
