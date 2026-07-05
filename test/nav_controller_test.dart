@@ -113,6 +113,40 @@ void main() {
   });
 
   group('route information', () {
+    test('initial default platform route keeps custom initial route on mobile',
+        () async {
+      final nav = NavController(
+        initialRoute: '/test',
+        routes: [
+          NavRoute('/', (p, q) => _page('Home')),
+          NavRoute('/test', (p, q) => _page('Test')),
+        ],
+      );
+
+      await (nav.delegate as RouterDelegate<String>).setInitialRoutePath('/');
+
+      expect(nav.currentPath, '/test');
+      expect(nav.canPop, false);
+      expect(nav.backStack.map((entry) => entry.path), ['/test']);
+    });
+
+    test('initial deep link replaces custom initial route', () async {
+      final nav = NavController(
+        initialRoute: '/splash',
+        routes: [
+          NavRoute('/splash', (p, q) => _page('Splash')),
+          NavRoute('/home', (p, q) => _page('Home')),
+        ],
+      );
+
+      await (nav.delegate as RouterDelegate<String>)
+          .setInitialRoutePath('/home');
+
+      expect(nav.currentPath, '/home');
+      expect(nav.canPop, false);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+    });
+
     test('external route path replaces stack without seeding initial route',
         () async {
       final nav = NavController(

@@ -626,6 +626,119 @@ void main() {
       expect(nav.backStack.length, 1);
     });
 
+    testWidgets('delegate popRoute does not remove the last page at root',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [NavRoute('/', (p, q) => const Text('Home'))],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      final handled = await (nav.delegate as RouterDelegate<String>).popRoute();
+      await tester.pumpAndSettle();
+
+      expect(handled, false);
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(nav.backStack.map((entry) => entry.path), ['/']);
+    });
+
+    testWidgets('back after replacing splash with home keeps home rendered',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/splash',
+        routes: [
+          NavRoute('/splash', (p, q) => const Text('Splash')),
+          NavRoute('/home', (p, q) => const Text('Home')),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      nav.navigate('/home', replace: true);
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+
+      await _pressBack(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Splash'), findsNothing);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+    });
+
+    testWidgets('repeated initial route path does not restore splash',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/splash',
+        routes: [
+          NavRoute('/splash', (p, q) => const Text('Splash')),
+          NavRoute('/home', (p, q) => const Text('Home')),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      final delegate = nav.delegate as RouterDelegate<String>;
+      await delegate.setInitialRoutePath('/splash');
+      nav.navigate('/home', replace: true);
+      await tester.pumpAndSettle();
+
+      await _pressBack(tester);
+      await delegate.setInitialRoutePath('/splash');
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Splash'), findsNothing);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+    });
+
+    testWidgets('resumed lifecycle re-emits pages from the controller stack',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/splash',
+        routes: [
+          NavRoute('/splash', (p, q) => const Text('Splash')),
+          NavRoute('/home', (p, q) => const Text('Home')),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        routerDelegate: nav.delegate,
+        routeInformationParser: nav.parser,
+      ));
+      await tester.pumpAndSettle();
+
+      nav.navigate('/home', replace: true);
+      await tester.pumpAndSettle();
+
+      var notifications = 0;
+      void listener() => notifications++;
+      nav.delegate.addListener(listener);
+      addTearDown(() => nav.delegate.removeListener(listener));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(notifications, greaterThanOrEqualTo(1));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Splash'), findsNothing);
+      expect(nav.backStack.map((entry) => entry.path), ['/home']);
+    });
+
     testWidgets('controller pop at root keeps the rendered page',
         (tester) async {
       final nav = NavController(

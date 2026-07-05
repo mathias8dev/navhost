@@ -1,3 +1,9 @@
+## 0.3.1
+
+- Fix `RouterDelegate` startup handling so the platform's default `/` initial route does not override a custom `NavController.initialRoute` on mobile.
+- Re-emit declarative pages when the app resumes, allowing `Navigator` to rebuild from the `NavController` stack after the platform clears its native navigation state.
+- Add regression coverage for `/splash` replacement flows, repeated initial route callbacks, and lifecycle resume rebuilding.
+
 ## 0.2.5
 
 - Fix `navigate()` with `popUpToInclusive` and `launchSingleTop` when the pop operation empties the stack before pushing the next entry.
