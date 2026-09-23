@@ -84,6 +84,7 @@ List<Page> _buildPages(
       case RoutePresentation.bottomSheet:
         pages.add(_BottomSheetPage(
           key: key,
+          entry: entry,
           child: child,
           config: entry.bottomSheetConfig ?? const BottomSheetConfig(),
           completer: entry.completer,
@@ -91,6 +92,7 @@ List<Page> _buildPages(
       case RoutePresentation.dialog:
         pages.add(_DialogPage(
           key: key,
+          entry: entry,
           child: child,
           config: entry.dialogConfig ?? const DialogConfig(),
           completer: entry.completer,
@@ -102,6 +104,7 @@ List<Page> _buildPages(
               route?.transitionDuration ?? defaultTransitionDuration;
           pages.add(_TransitionPage(
             key: key,
+            entry: entry,
             child: child,
             enterTransition: enter,
             exitTransition: route?.exitTransition ?? defaultExitTransition,
@@ -118,6 +121,7 @@ List<Page> _buildPages(
         } else {
           pages.add(_MaterialPage(
             key: key,
+            entry: entry,
             child: child,
             completer: entry.completer,
           ));

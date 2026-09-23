@@ -1,12 +1,19 @@
 part of 'nav_controller.dart';
 
-class _DialogPage extends Page {
+abstract interface class _RouteEntryPage {
+  _RouteEntry get entry;
+}
+
+class _DialogPage extends Page implements _RouteEntryPage {
+  @override
+  final _RouteEntry entry;
   final Widget child;
   final DialogConfig config;
   final Completer<dynamic>? completer;
 
   const _DialogPage({
     super.key,
+    required this.entry,
     required this.child,
     required this.config,
     this.completer,
@@ -36,13 +43,16 @@ class _DialogPage extends Page {
   }
 }
 
-class _BottomSheetPage extends Page {
+class _BottomSheetPage extends Page implements _RouteEntryPage {
+  @override
+  final _RouteEntry entry;
   final Widget child;
   final BottomSheetConfig config;
   final Completer<dynamic>? completer;
 
   const _BottomSheetPage({
     super.key,
+    required this.entry,
     required this.child,
     required this.config,
     this.completer,
@@ -87,7 +97,9 @@ class _BottomSheetPage extends Page {
   }
 }
 
-class _TransitionPage extends Page {
+class _TransitionPage extends Page implements _RouteEntryPage {
+  @override
+  final _RouteEntry entry;
   final Widget child;
   final NavTransitionBuilder enterTransition;
   final NavTransitionBuilder? exitTransition;
@@ -99,6 +111,7 @@ class _TransitionPage extends Page {
 
   const _TransitionPage({
     super.key,
+    required this.entry,
     required this.child,
     required this.enterTransition,
     this.exitTransition,
@@ -143,12 +156,15 @@ class _TransitionPage extends Page {
   }
 }
 
-class _MaterialPage<T> extends MaterialPage<T> {
+class _MaterialPage<T> extends MaterialPage<T> implements _RouteEntryPage {
+  @override
+  final _RouteEntry entry;
   final Completer<dynamic>? completer;
 
   const _MaterialPage({
     required super.child,
     super.key,
+    required this.entry,
     this.completer,
   });
 

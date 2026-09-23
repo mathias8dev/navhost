@@ -114,6 +114,42 @@ void main() {
       expect(await future, 99);
     });
 
+    testWidgets(
+        'navigation started from a bottom sheet result survives page removal',
+        (tester) async {
+      final nav = NavController(
+        initialRoute: '/',
+        routes: [
+          NavRoute('/', (p, q) => const Text('Home')),
+          NavRoute('/next', (p, q) => const Text('Next')),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: NavHost(navController: nav)),
+      );
+      await tester.pumpAndSettle();
+
+      String? sheetResult;
+      Future<void> openSheetThenNavigate() async {
+        sheetResult = await nav.showBottomSheetWidget<String>(
+          const Text('Sheet Widget'),
+        );
+        nav.navigate<void>('/next');
+      }
+
+      final flow = openSheetThenNavigate();
+      await tester.pumpAndSettle();
+
+      nav.pop('continue');
+      await tester.pumpAndSettle();
+      await flow;
+
+      expect(sheetResult, 'continue');
+      expect(nav.currentPath, '/next');
+      expect(nav.backStack.map((entry) => entry.path), ['/', '/next']);
+      expect(find.text('Next'), findsOneWidget);
+    });
+
     testWidgets('showDialogWidget and pop with result', (tester) async {
       final nav = NavController(
         initialRoute: '/',

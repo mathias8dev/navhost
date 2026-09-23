@@ -226,14 +226,18 @@ class NavController extends ChangeNotifier {
   /// Called by [_NavRouterDelegate] via [onDidRemovePage] to sync the declarative
   /// stack after the Navigator removes a page (back gesture, system back button).
   /// Must NOT call [pop] to avoid recursion.
-  void _syncStack() {
-    if (_stack.length > 1) {
-      final removed = _stack.removeLast();
-      if (removed.completer != null && !removed.completer!.isCompleted) {
-        removed.completer!.complete(null);
-      }
-      notifyListeners();
+  void _syncStack(Page<dynamic> page) {
+    if (_stack.length <= 1 || page is! _RouteEntryPage) return;
+
+    final routeEntryPage = page as _RouteEntryPage;
+    final index = _stack.indexOf(routeEntryPage.entry);
+    if (index == -1) return;
+
+    final removed = _stack.removeAt(index);
+    if (removed.completer != null && !removed.completer!.isCompleted) {
+      removed.completer!.complete(null);
     }
+    notifyListeners();
   }
 
   /// Pops entries until [path] is at the top of the stack.

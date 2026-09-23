@@ -1,3 +1,7 @@
+## 0.3.2
+
+- Fix declarative page removal so navigation started immediately after awaiting a bottom sheet or dialog result keeps the newly pushed route.
+
 ## 0.3.1
 
 - Fix `RouterDelegate` startup handling so the platform's default `/` initial route does not override a custom `NavController.initialRoute` on mobile.

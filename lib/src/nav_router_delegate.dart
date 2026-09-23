@@ -72,7 +72,7 @@ class _NavRouterDelegate extends RouterDelegate<String>
       child: Navigator(
         key: navigatorKey,
         pages: _buildPages(controller),
-        onDidRemovePage: (_) => controller._syncStack(),
+        onDidRemovePage: controller._syncStack,
       ),
     );
   }
